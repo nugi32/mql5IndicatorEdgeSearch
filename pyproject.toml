@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "edge-research"
+version = "0.1.0"
+description = "Systematic market-edge discovery pipeline from MQL5-exported indicator data"
+requires-python = ">=3.9"
+authors = [{name = "Edge Research", email = "dev@edge-research.local"}]
+license = {text = "MIT"}
+
+dependencies = [
+    "numpy==1.26.4",
+    "pandas==2.1.4",
+    "pyarrow==14.0.1",
+    "pyyaml==6.0.1",
+    "scipy==1.11.4",
+    "statsmodels==0.14.0",
+    "jinja2==3.1.2",
+    "pydantic==2.5.2",
+    "pydantic-settings==2.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==7.4.3",
+    "pytest-cov==4.1.0",
+    "black==23.12.1",
+    "ruff==0.1.11",
+    "mypy==1.7.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+addopts = "-v --tb=short"
+pythonpath = ["."]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
+
+[tool.black]
+line-length = 100
+target-version = ["py39"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"

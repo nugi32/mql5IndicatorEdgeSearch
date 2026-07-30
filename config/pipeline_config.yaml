@@ -1,0 +1,46 @@
+# Pipeline Configuration for edge_research
+
+# Forward-looking horizon parameters
+max_horizon: 20                    # Maximum bars to look ahead (1 to 20)
+min_horizon: 1                     # Minimum bars (always 1)
+
+# Frequency filtering
+min_occurrence: 50                 # Minimum number of times condition triggers
+min_freq_per_year: 10              # Minimum occurrences per year (at 1H: ~250 trading days/year)
+
+# Statistical significance
+alpha: 0.05                        # Significance level for hypothesis tests
+fdr_method: "fdr_bh"               # Benjamini-Hochberg FDR correction
+
+# Walk-forward validation
+wf_train_bars: 5000                # Training window size (bars)
+wf_test_bars: 1000                 # Test window size (bars)
+wf_step_bars: 500                  # Step size between windows
+
+# Regime classification
+atr_percentile_low: 25             # ATR < 25th percentile = low vol
+atr_percentile_high: 75            # ATR > 75th percentile = high vol
+
+adx_trending_threshold: 25         # ADX > 25 = trending regime
+adx_ranging_threshold: 20          # ADX < 20 = ranging regime
+
+# Parameter sensitivity
+param_shift_pct: 15                # ±15% parameter shift for sensitivity test
+
+# Cost model (entry and exit)
+spread_pips: 2.0                   # Spread in pips
+slippage_pips: 1.0                 # Slippage in pips (on entry and exit)
+pip_value: 0.0001                  # Pip value (for major forex pairs)
+
+# Holdout set
+holdout_pct: 0.15                  # Reserve 15% of data as final untouched test set
+
+# Condition generation
+rsi_thresholds: [20, 25, 30, 35, 70, 75, 80]
+cci_thresholds: [-100, -50, 50, 100]
+mom_thresholds: [-5, 0, 5]
+stoch_thresholds: [20, 30, 70, 80]
+
+# Output
+output_dir: "./output"
+parquet_compression: "zstd"        # zstd or snappy
