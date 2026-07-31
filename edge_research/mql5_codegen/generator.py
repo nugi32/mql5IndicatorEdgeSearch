@@ -141,20 +141,19 @@ class MQL5CodeGenerator:
         # Load template
         if template_path:
             template_path = Path(template_path)
+        else:
+            template_path = Path(__file__).with_name("templates") / "edge_ea.mq5"
+
+        if template_path.exists():
             with open(template_path) as f:
                 template_str = f.read()
         else:
-            # Use default built-in template (simplified version here)
             template_str = """
-//--- EA: {{ EDGE_ID }}
-//--- Hypothesis: {{ HYPOTHESIS }}
-//--- Entry Condition: {{ ENTRY_CONDITION }}
-bool CheckEntryCondition() {
-    return {{ ENTRY_CONDITION }};
-}
+//--- Entry Condition: {ENTRY_CONDITION}
+bool CheckEntryCondition() {{
+    return {ENTRY_CONDITION};
+}}
 """
-        
-        template = Template(template_str)
         
         # Derive magic number from edge_id
         magic_number = hash(edge_report.edge_id) % 1000000
@@ -164,15 +163,14 @@ bool CheckEntryCondition() {
             edge_report.entry_condition
         )
         
-        # Render
-        code = template.render(
-            EA_NAME=edge_report.edge_id.replace(" ", "_"),
-            EDGE_ID=edge_report.edge_id,
-            HYPOTHESIS=edge_report.hypothesis,
-            MAGIC_NUMBER=magic_number,
-            EXIT_BARS=edge_report.optimal_horizon,
-            ENTRY_CONDITION=mql5_condition,
-        )
+        # Render template placeholders manually so MQL5 braces remain intact.
+        code = template_str
+        code = code.replace("{EA_NAME}", edge_report.edge_id.replace(" ", "_"))
+        code = code.replace("{EDGE_ID}", edge_report.edge_id)
+        code = code.replace("{HYPOTHESIS}", edge_report.hypothesis)
+        code = code.replace("{MAGIC_NUMBER}", str(magic_number))
+        code = code.replace("{EXIT_BARS}", str(edge_report.optimal_horizon))
+        code = code.replace("{ENTRY_CONDITION}", mql5_condition)
         
         return code
 

@@ -103,6 +103,7 @@ def test_condition_invalid_column(sample_data):
 def test_no_lookahead_in_atomic_evaluation(sample_data):
     """Regression test: ensure atomic evaluation doesn't use future data."""
     evaluator = ConditionEvaluator(sample_data)
+
     cond = AtomicCondition("close", Operator.GT, 100.5)
     mask = evaluator.evaluate_atomic(cond)
 

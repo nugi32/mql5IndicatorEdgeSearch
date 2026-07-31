@@ -110,3 +110,43 @@ void LogTrade(double entry_price, double exit_price, bool success) {
         TimeToString(TimeCurrent(), TIME_DATE | TIME_MINUTES),
         DoubleToString(exit_price, Digits),
         DoubleToString(pnl_pips, 1),
+        result
+    );
+    
+    FileClose(csv_handle);
+}
+
+//+------------------------------------------------------------------+
+//| Timeframe to string                                              |
+//+------------------------------------------------------------------+
+string TimeframeToString(ENUM_TIMEFRAMES tf) {
+    switch(tf) {
+        case PERIOD_M1:  return "M1";
+        case PERIOD_M5:  return "M5";
+        case PERIOD_M15: return "M15";
+        case PERIOD_M30: return "M30";
+        case PERIOD_H1:  return "H1";
+        case PERIOD_H4:  return "H4";
+        case PERIOD_D1:  return "D1";
+        default: return "UNKNOWN";
+    }
+}
+
+//+------------------------------------------------------------------+
+//| Position helper functions                                         |
+//+------------------------------------------------------------------+
+bool PositionSelectByMagic(int magic) {
+    for (int i = PositionsTotal() - 1; i >= 0; i--) {
+        if (PositionGetTicket(i) > 0 && PositionGetInteger(POSITION_MAGIC) == magic) {
+            return true;
+        }
+    }
+    return false;
+}
+
+int PositionOpenBar(ulong ticket) {
+    if (PositionSelectByTicket(ticket)) {
+        return (int)Bars(Symbol(), Period()) - (int)BarShift(Symbol(), Period(), PositionGetInteger(POSITION_TIME));
+    }
+    return 0;
+}

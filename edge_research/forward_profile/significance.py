@@ -56,11 +56,11 @@ def wilson_ci(
     lower = center - margin
     upper = center + margin
 
-    if np.isclose(lower, 0.0, atol=1e-12):
+    if np.isclose(lower, 0.0, atol=1e-15):
         lower = 0.0
-    if np.isclose(upper, 1.0, atol=1e-12):
+    if np.isclose(upper, 1.0, atol=1e-15):
         upper = 1.0
-    
+
     return (max(0.0, lower), min(1.0, upper))
 
 

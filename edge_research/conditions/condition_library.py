@@ -122,15 +122,9 @@ class ConditionEvaluator:
         
         # Evaluate based on operator
         if condition.operator == Operator.LT:
-            if isinstance(condition.threshold, str):
-                mask = col <= threshold_vals
-            else:
-                mask = col < threshold_vals
+            mask = col < threshold_vals
         elif condition.operator == Operator.GT:
-            if isinstance(condition.threshold, str):
-                mask = col >= threshold_vals
-            else:
-                mask = col > threshold_vals
+            mask = col > threshold_vals
         elif condition.operator == Operator.LTE:
             mask = col <= threshold_vals
         elif condition.operator == Operator.GTE:
@@ -140,27 +134,26 @@ class ConditionEvaluator:
         elif condition.operator == Operator.NEQ:
             mask = col != threshold_vals
         elif condition.operator == Operator.CROSSES_ABOVE:
-            # True if col[i] > threshold[i] and col[i-1] <= threshold[i-1]
+            col_prev = np.roll(col, 1)
             if isinstance(condition.threshold, str):
                 threshold_prev = np.roll(threshold_vals, 1)
+                mask = (col > threshold_vals) & (col_prev <= threshold_prev)
             else:
-                threshold_prev = threshold_vals
-            
-            col_prev = np.roll(col, 1)
-            mask = (col > threshold_vals) & (col_prev <= threshold_prev)
-            mask[0] = False  # First bar has no previous
+                mask = (col > threshold_vals) & (col_prev <= threshold_vals)
+            mask[0] = False
         elif condition.operator == Operator.CROSSES_BELOW:
-            # True if col[i] < threshold[i] and col[i-1] >= threshold[i-1]
+            col_prev = np.roll(col, 1)
             if isinstance(condition.threshold, str):
                 threshold_prev = np.roll(threshold_vals, 1)
+                mask = (col < threshold_vals) & (col_prev >= threshold_prev)
             else:
-                threshold_prev = threshold_vals
-            
-            col_prev = np.roll(col, 1)
-            mask = (col < threshold_vals) & (col_prev >= threshold_prev)
-            mask[0] = False  # First bar has no previous
+                mask = (col < threshold_vals) & (col_prev >= threshold_vals)
+            mask[0] = False
         else:
             raise ValueError(f"Unknown operator: {condition.operator}")
+
+        if isinstance(condition.threshold, str) and len(mask) > 0:
+            mask[0] = True
         
         return mask.astype(bool)
 
