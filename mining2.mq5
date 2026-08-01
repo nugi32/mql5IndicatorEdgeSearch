@@ -133,31 +133,64 @@ int OnInit() {
     return INIT_SUCCEEDED;
 }
 
+void WriteBarToCSVLive() {
+    if (g_file_handle == INVALID_HANDLE) return;
+
+    datetime t = iTime(g_symbol, g_timeframe, 1);
+    double o = iOpen(g_symbol, g_timeframe, 1);
+    double h = iHigh(g_symbol, g_timeframe, 1);
+    double l = iLow(g_symbol, g_timeframe, 1);
+    double c = iClose(g_symbol, g_timeframe, 1);
+    long tv = iVolume(g_symbol, g_timeframe, 1);
+    long rv = iRealVolume(g_symbol, g_timeframe, 1);
+
+    string time_str = TimeToString(t, TIME_DATE | TIME_MINUTES);
+    StringReplace(time_str, ".", "");
+
+    string row = time_str + ",";
+    row += DoubleToString(o, 6) + ",";
+    row += DoubleToString(h, 6) + ",";
+    row += DoubleToString(l, 6) + ",";
+    row += DoubleToString(c, 6) + ",";
+    row += (string)tv + ",";
+    row += (string)rv;
+
+    row += GetMAValues(1);
+    row += GetAdaptiveMAValues(1);
+    row += GetTrendValues(1);
+    row += GetOscillatorValues(1);
+    row += GetVolatilityValues(1);
+    row += GetVolumeBased(1);
+
+    FileWrite(g_file_handle, row);
+}
+
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
 //+------------------------------------------------------------------+
+datetime g_last_bar_time = 0;
+
 void OnTick() {
-    if (!g_csv_initialized || g_export_complete) {
-        return;
-    }
+    if (!g_csv_initialized || g_export_complete) return;
 
-    int current_bar_index = 0; // Current bar (most recent in tester)
+    datetime current_bar_time = iTime(g_symbol, g_timeframe, 0);
+
+    if (current_bar_time == g_last_bar_time) return;
+    g_last_bar_time = current_bar_time;
+
     int total_bars = Bars(g_symbol, g_timeframe);
+    int progress_percent = 0; // hitung sesuai kebutuhan
 
-    // Calculate progress
-    int bars_processed = total_bars - current_bar_index;
-    int progress_percent = (bars_processed * 100) / total_bars;
+    Comment("DataExporter Progress: bars=", total_bars);
 
-    Comment("DataExporter Progress: ", progress_percent, "% | Bars: ", bars_processed, "/", total_bars);
+    WriteBarToCSVLive();
 
-    // Write current bar to CSV
-    WriteBarToCSV(current_bar_index);
-
-    // Check if we've reached the end of history (first bar)
-    if (current_bar_index >= total_bars - 1) {
+    static int last_total_bars = 0;
+    if (total_bars == last_total_bars) {
         g_export_complete = true;
         OnDeinit(REASON_PROGRAM);
     }
+    last_total_bars = total_bars;
 }
 
 //+------------------------------------------------------------------+

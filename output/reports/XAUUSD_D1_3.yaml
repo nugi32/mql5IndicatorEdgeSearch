@@ -1,0 +1,368 @@
+edge_id: XAUUSD_D1_3
+hypothesis: Price rally after rsi_7 < 35.0
+entry_condition: rsi_7 < 35.0
+frequency:
+  n_occurrence: 692
+  freq_per_year: 43.25740201951053
+  date_range_start: '2009-12-31 00:00:00'
+  date_range_end: '2025-12-30 00:00:00'
+optimal_horizon: 1
+significance_results:
+- horizon: 1
+  prob_bull: 0.5158959627151489
+  sample_size: 692
+  p_value: 0.8546166459730602
+  p_adjusted: 0.9999997925442035
+  significant: false
+  ci_lower: 0.47867652106937375
+  ci_upper: 0.552939876202047
+  effect_size: -0.003480076789855957
+- horizon: 2
+  prob_bull: 0.5419074892997742
+  sample_size: 692
+  p_value: 0.48386669125062376
+  p_adjusted: 0.9999997925442035
+  significant: false
+  ci_lower: 0.5032098698242558
+  ci_upper: 0.5772682323211789
+  effect_size: 0.0147322416305542
+- horizon: 3
+  prob_bull: 0.5361271500587463
+  sample_size: 692
+  p_value: 0.6736135979354829
+  p_adjusted: 0.9999997925442035
+  significant: false
+  ci_lower: 0.4974292477341862
+  ci_upper: 0.5715519826761863
+  effect_size: 0.009439349174499512
+- horizon: 4
+  prob_bull: 0.5375722646713257
+  sample_size: 692
+  p_value: 0.9145582056092165
+  p_adjusted: 0.9999997925442035
+  significant: false
+  ci_lower: 0.5003189363230687
+  ci_upper: 0.5744107299548349
+  effect_size: -0.0020328760147094727
+- horizon: 5
+  prob_bull: 0.5549132823944092
+  sample_size: 692
+  p_value: 0.7583808797679383
+  p_adjusted: 0.9999997925442035
+  significant: false
+  ci_lower: 0.5162345246370442
+  ci_upper: 0.5901115389122799
+  effect_size: 0.007265210151672363
+- horizon: 6
+  prob_bull: 0.5520231127738953
+  sample_size: 692
+  p_value: 0.8667966295012195
+  p_adjusted: 0.9999997925442035
+  significant: false
+  ci_lower: 0.5133379662833611
+  ci_upper: 0.5872596613984319
+  effect_size: 0.0046187639236450195
+- horizon: 7
+  prob_bull: 0.5505780577659607
+  sample_size: 692
+  p_value: 0.9689382241635647
+  p_adjusted: 0.9999997925442035
+  significant: false
+  ci_lower: 0.5133379662833611
+  ci_upper: 0.5872596613984319
+  effect_size: 0.0007364749908447266
+- horizon: 8
+  prob_bull: 0.5708092451095581
+  sample_size: 692
+  p_value: 0.40838245373903503
+  p_adjusted: 0.9999997925442035
+  significant: false
+  ci_lower: 0.53218811084388
+  ci_upper: 0.6057743499768649
+  effect_size: 0.017068088054656982
+- horizon: 9
+  prob_bull: 0.5751445293426514
+  sample_size: 692
+  p_value: 0.18514656009344588
+  p_adjusted: 0.9999997925442035
+  significant: false
+  ci_lower: 0.5379989203594714
+  ci_upper: 0.6114604121963357
+  effect_size: 0.025059223175048828
+- horizon: 10
+  prob_bull: 0.5809248685836792
+  sample_size: 692
+  p_value: 0.07231206110707822
+  p_adjusted: 0.7443888643375699
+  significant: false
+  ci_lower: 0.5438148389535438
+  ci_upper: 0.6171413653373252
+  effect_size: 0.0340079665184021
+- horizon: 11
+  prob_bull: 0.5910404920578003
+  sample_size: 692
+  p_value: 0.019053697059522534
+  p_adjusted: 0.35717395017342274
+  significant: false
+  ci_lower: 0.5540050765798141
+  ci_upper: 0.6270706532474135
+  effect_size: 0.044367313385009766
+- horizon: 12
+  prob_bull: 0.5968208312988281
+  sample_size: 692
+  p_value: 0.011241898571767273
+  p_adjusted: 0.2645373932564891
+  significant: false
+  ci_lower: 0.5598351981061985
+  ci_upper: 0.6327374034560914
+  effect_size: 0.04795414209365845
+- horizon: 13
+  prob_bull: 0.6069363951683044
+  sample_size: 692
+  p_value: 0.004327085486262483
+  p_adjusted: 0.1408818530411041
+  significant: false
+  ci_lower: 0.5685901937606714
+  ci_upper: 0.6412277154042114
+  effect_size: 0.05538874864578247
+- horizon: 14
+  prob_bull: 0.6184971332550049
+  sample_size: 692
+  p_value: 0.0006400210409494012
+  p_adjusted: 0.03200105204747006
+  significant: true
+  ci_lower: 0.5817450284054405
+  ci_upper: 0.653940842163332
+  effect_size: 0.06451225280761719
+- horizon: 15
+  prob_bull: 0.6199421882629395
+  sample_size: 692
+  p_value: 0.0005303837048615812
+  p_adjusted: 0.027501377289119024
+  significant: true
+  ci_lower: 0.5817450284054405
+  ci_upper: 0.653940842163332
+  effect_size: 0.06693220138549805
+- horizon: 16
+  prob_bull: 0.6213873028755188
+  sample_size: 692
+  p_value: 0.0003977147343245946
+  p_adjusted: 0.024208722958888367
+  significant: true
+  ci_lower: 0.5846720073435417
+  ci_upper: 0.6567622990927618
+  effect_size: 0.06691497564315796
+- horizon: 17
+  prob_bull: 0.6242774724960327
+  sample_size: 692
+  p_value: 0.00019925100407180985
+  p_adjusted: 0.01328340027145399
+  significant: true
+  ci_lower: 0.5876003377940294
+  ci_upper: 0.6595824045098052
+  effect_size: 0.07029259204864502
+- horizon: 18
+  prob_bull: 0.6127167344093323
+  sample_size: 692
+  p_value: 0.001965746709231553
+  p_adjusted: 0.07733998212082144
+  significant: false
+  ci_lower: 0.5744334555441089
+  ci_upper: 0.6468813253558361
+  effect_size: 0.05995047092437744
+- horizon: 19
+  prob_bull: 0.6083815097808838
+  sample_size: 692
+  p_value: 0.0035345703922684546
+  p_adjusted: 0.11781901307561515
+  significant: false
+  ci_lower: 0.57151116149719
+  ci_upper: 0.644055183535224
+  effect_size: 0.05512779951095581
+- horizon: 20
+  prob_bull: 0.602601170539856
+  sample_size: 692
+  p_value: 0.005706798157972148
+  p_adjusted: 0.16644827960752098
+  significant: false
+  ci_lower: 0.5656705472192389
+  ci_upper: 0.6383989260781129
+  effect_size: 0.052272140979766846
+baseline_prob: 0.5539848804473877
+robustness:
+  walk_forward:
+    edge_direction_consistent: false
+    edge_magnitude_std: .nan
+    window_results: []
+  regime_stress:
+    regime_results:
+      trending:
+        prob_bull: !!python/object/apply:numpy._core.multiarray._reconstruct
+          args:
+          - &id001 !!python/name:numpy.ndarray ''
+          - !!python/tuple
+            - 0
+          - !!binary |
+            Yg==
+          state: !!python/tuple
+          - 1
+          - !!python/tuple
+            - 20
+          - &id002 !!python/object/apply:numpy.dtype
+            args:
+            - f8
+            - false
+            - true
+            state: !!python/tuple
+            - 3
+            - <
+            - null
+            - null
+            - null
+            - -1
+            - -1
+            - 0
+          - false
+          - !!binary |
+            TeGlvU1H4D+XkCzu00ThP/I46dUQxuA/uU8TxUoV4T876G8Gl8PhPxkpiS8g8+E/R31no76z4T/s
+            1Kq7gTLiP5zB5XBsoeI/egL/mfXQ4j81hDHsBzDjPwgwU3hpb+M/5nBsofKe4z/EsYXKe87jP6Hy
+            nvME/uM/rYeWkCzu4z/PRn1no77jPx9aQrK4T+M/E8VKFZFf4z81hDHsBzDjPw==
+        n_samples: 517
+      ranging:
+        prob_bull: !!python/object/apply:numpy._core.multiarray._reconstruct
+          args:
+          - *id001
+          - !!python/tuple
+            - 0
+          - !!binary |
+            Yg==
+          state: !!python/tuple
+          - 1
+          - !!python/tuple
+            - 20
+          - *id002
+          - false
+          - !!binary |
+            nqyWN0Yw4T9Ffyer5Y3hP5IkSZIkSeI/RX8nq+WN4T+Y6O9ktbzhP/fZBcSm0uA/8RVf8RVf4T/m
+            jRFM9HfiP5jo72S1vOE/7FG4HoXr4T8/u4DYVBriPz+7gNhUGuI/jGCiv5PV4j8tb4xgor/jP4ec
+            ++wCYuM/LW+MYKK/4z/OfXYBsankP3sUrkfheuQ/LW+MYKK/4z/aBcSm0pDjPw==
+        n_samples: 175
+      high_vol:
+        prob_bull: !!python/object/apply:numpy._core.multiarray._reconstruct
+          args:
+          - *id001
+          - !!python/tuple
+            - 0
+          - !!binary |
+            Yg==
+          state: !!python/tuple
+          - 1
+          - !!python/tuple
+            - 20
+          - *id002
+          - false
+          - !!binary |
+            46WbxCCw4j/TTWIQWDnkP9v5fmq8dOM/g8DKoUW24z/LoUW28/3kP8P1KFyPwuU/ukkMAiuH5j9i
+            EFg5tMjmP6rx0k1iEOg/qvHSTWIQ6D9SuB6F61HoP6JFtvP91Og/8tJNYhBY6T+iRbbz/dToP1K4
+            HoXrUeg/UrgehetR6D9aZDvfT43nP2IQWDm0yOY/CtejcD0K5z9qvHSTGATmPw==
+        n_samples: 125
+      low_vol:
+        prob_bull: !!python/object/apply:numpy._core.multiarray._reconstruct
+          args:
+          - *id001
+          - !!python/tuple
+            - 0
+          - !!binary |
+            Yg==
+          state: !!python/tuple
+          - 1
+          - !!python/tuple
+            - 20
+          - *id002
+          - false
+          - !!binary |
+            hfYS2kto3z/HcRzHcRzfPwntJbSX0N4/HMdxHMdx4D/3EtpLaC/hP3sJ7SW0l+A/X0J7Ce0l4D9V
+            VVVVVVXhPzmO4ziO4+A/ewntJbSX4D++hPYS2kvgPxzHcRzHceA/voT2EtpL4D+Y0F5CewnhPzmO
+            4ziO4+A/9xLaS2gv4T9yHMdxHMfhPzmO4ziO4+A/X0J7Ce0l4D9fQnsJ7SXgPw==
+        n_samples: 216
+    most_robust_regime: high_vol
+  parameter_sensitivity:
+    original_threshold: 35.0
+    original_prob_bull: !!python/object/apply:numpy._core.multiarray._reconstruct
+      args:
+      - *id001
+      - !!python/tuple
+        - 0
+      - !!binary |
+        Yg==
+      state: !!python/tuple
+      - 1
+      - !!python/tuple
+        - 20
+      - *id002
+      - false
+      - !!binary |
+        FtUwOziC4D9pvYBtTlfhP5D7bin0J+E/Bmxzusoz4T+SsaiG2cHhP6bQn2QsquE/L2Cb01We4T+p
+        htnBEUTiPwzY5nSVZ+I/5Zn4uO+W4j8irRewzeniP/xuKfQnGeM/OIJI6wVs4z/rBWxzusrjP2J2
+        cASR1uM/2OZ0lWfi4z/Fx323FPrjPxJEWi9gm+M/r/JMfNx34z/VMDs4gkjjPw==
+    shifted_conditions:
+    - shift_pct: -15
+      shifted_threshold: 29.75
+      prob_bull: !!python/object/apply:numpy._core.multiarray._reconstruct
+        args:
+        - *id001
+        - !!python/tuple
+          - 0
+        - !!binary |
+          Yg==
+        state: !!python/tuple
+        - 1
+        - !!python/tuple
+          - 20
+        - *id002
+        - false
+        - !!binary |
+          m465RHhS4D8WpqIcsnfhP+GIL5PB0uA/nhQkf15l4T9coBhr+/fhPzrmEuFJQeI/bH0bMFTT4T86
+          5hLhSUHiPwlPCpI/r+I/17cBQzUd4z+UQ/Yu0q/jP8pgabjCVOQ/D1vfBgzV5D+H7F2kX+fkP4fs
+          XaRf5+Q//33cQbP55D9mMlgarjDlP4fsXaRf5+Q/VVVVVVVV5T9mMlgarjDlPw==
+      correlation: 0.9778920870386347
+    - shift_pct: 15
+      shifted_threshold: 40.25
+      prob_bull: !!python/object/apply:numpy._core.multiarray._reconstruct
+        args:
+        - *id001
+        - !!python/tuple
+          - 0
+        - !!binary |
+          Yg==
+        state: !!python/tuple
+        - 1
+        - !!python/tuple
+          - 20
+        - *id002
+        - false
+        - !!binary |
+          UOtwaXO74D/6XNmISfPgP70D+1uFo+A/gP9VjUP74D/KnS3D+1rhP8qdLcP7WuE/vVg0ugdL4T90
+          D5bi0ZLhPxM8BfmzuuE/dA+W4tGS4T+BVI/rxaLhPx+B/gGoyuE/sWh0D5bi4T+meLRkJHriP5kz
+          u1swauI/H9Y3YCpy4j+meLRkJHriPywbMWkeguI/RKUjewai4j++Aqd2DJriPw==
+      correlation: 0.9462015127108754
+    sensitivity_score: 0.962046799874755
+  cost_model:
+    entry_slippage_pips: 3.0
+    exit_slippage_pips: 3.0
+    total_cost_pips: 6.0
+    gross_expectancy_pips: 185441.5
+    net_expectancy_pips: 185435.5
+    expectancy_r: 0.7748497724533081
+validated_period: walk-forward validated
+holdout_result:
+  n_samples: 44
+  prob_bull: !!python/object/apply:numpy._core.multiarray.scalar
+  - *id002
+  - !!binary |
+    AAAAAAAA4D8=
+mql5_mapping: '// Condition: rsi_7 < 35.0
+
+  // Optimal Horizon: 1'
+timestamp: '2026-08-01T10:00:46.132727'
+metadata: {}
