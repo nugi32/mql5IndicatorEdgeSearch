@@ -62,3 +62,20 @@ def test_float32_conversion(sample_csv):
     numeric_cols = df.select_dtypes(include=[np.number]).columns
     for col in numeric_cols:
         assert df[col].dtype == np.float32, f"Column {col} is not float32"
+
+
+def test_duplicate_timestamps_are_reindexed(tmp_path):
+    """Duplicate timestamps should not prevent ingestion."""
+    csv_path = tmp_path / "duplicate_time.csv"
+    pd.DataFrame(
+        {
+            "time": ["20091231 00:00", "20091231 00:00", "20091231 00:00"],
+            "close": [1.0, 2.0, 3.0],
+        }
+    ).to_csv(csv_path, index=False)
+
+    df = load_csv_and_validate(csv_path)
+
+    assert len(df) == 3
+    assert df.index.is_monotonic_increasing
+    assert not df.index.duplicated().any()

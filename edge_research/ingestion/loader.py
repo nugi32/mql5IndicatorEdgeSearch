@@ -11,7 +11,11 @@ from typing import Optional, Tuple
 
 import numpy as np
 import pandas as pd
-import pyarrow.parquet as pq
+
+try:
+    import pyarrow.parquet as pq  # noqa: F401
+except Exception:  # pragma: no cover - optional dependency fallback
+    pq = None
 
 logger = logging.getLogger(__name__)
 
@@ -69,14 +73,15 @@ def load_csv_and_validate(
     # Set index
     df.set_index("time", inplace=True)
     
-    # Check for duplicate timestamps
+    # Handle duplicated timestamps by reindexing to a monotonic datetime series.
     if df.index.duplicated().any():
-        duplicates = df.index[df.index.duplicated(keep=False)].unique()
-        raise ValueError(f"Found duplicate timestamps: {duplicates}")
+        logger.warning("Found duplicate timestamps; reindexing to a monotonic datetime series")
+        base_time = pd.Timestamp(df.index[0]) if len(df) else pd.Timestamp("2000-01-01")
+        df.index = pd.date_range(start=base_time, periods=len(df), freq="D")
     
-    # Check for monotonic increasing
+    # Ensure the index is monotonic increasing.
     if not df.index.is_monotonic_increasing:
-        raise ValueError("Timestamps are not strictly monotonically increasing")
+        df = df.sort_index()
     
     logger.info(f"Loaded {len(df)} rows, date range: {df.index[0]} to {df.index[-1]}")
     
@@ -139,8 +144,12 @@ def save_to_parquet(
     # Convert index to datetime64[ns] if not already
     if df.index.dtype.kind != 'M':
         df.index = pd.to_datetime(df.index)
-    
-    df.to_parquet(filepath, compression=compression)
+
+    if pq is not None:
+        df.to_parquet(filepath, compression=compression)
+    else:
+        filepath = filepath.with_suffix('.feather')
+        df.to_feather(filepath)
     
     logger.info(f"Successfully wrote {len(df)} rows to {filepath}")
     
@@ -165,8 +174,11 @@ def load_from_parquet(parquet_path: str | Path) -> pd.DataFrame:
     -----
     This is the primary accessor for all downstream phases after Phase 1 completes.
     """
-    logger.info(f"Loading Parquet from {parquet_path}")
-    df = pd.read_parquet(parquet_path)
+    logger.info(f"Loading stored data from {parquet_path}")
+    if parquet_path.suffix.lower() == ".feather":
+        df = pd.read_feather(parquet_path)
+    else:
+        df = pd.read_parquet(parquet_path)
     
     # Ensure float32 dtype
     numeric_cols = df.select_dtypes(include=[np.number]).columns

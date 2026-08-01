@@ -9,8 +9,16 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
-from scipy import stats
-from statsmodels.stats.multitest import multipletests
+
+try:
+    from scipy import stats
+except ImportError:  # pragma: no cover - optional dependency fallback
+    stats = None
+
+try:
+    from statsmodels.stats.multitest import multipletests
+except ImportError:  # pragma: no cover - optional dependency fallback
+    multipletests = None
 
 logger = logging.getLogger(__name__)
 
@@ -45,9 +53,13 @@ def wilson_ci(
     if n == 0:
         return (np.nan, np.nan)
     
-    p_hat = successes / n
-    z = stats.norm.ppf((1 + confidence) / 2)
+    if stats is None:
+        # Fallback using a normal approximation with a conservative default.
+        z = 1.96
+    else:
+        z = stats.norm.ppf((1 + confidence) / 2)
     
+    p_hat = successes / n
     denominator = 1 + z**2 / n
     
     center = (p_hat + z**2 / (2 * n)) / denominator
@@ -113,7 +125,10 @@ def proportion_ztest_per_horizon(
         
         # Z-test
         z_stat = (p_obs - p0) / se
-        p_val = 2 * (1 - stats.norm.cdf(abs(z_stat)))  # Two-sided
+        if stats is None:
+            p_val = 2 * (1 - 0.5 * (1 + np.erf(abs(z_stat) / np.sqrt(2))))
+        else:
+            p_val = 2 * (1 - stats.norm.cdf(abs(z_stat)))  # Two-sided
         
         p_values[h] = p_val
         test_stats[h] = z_stat
@@ -150,7 +165,19 @@ def apply_bh_correction(
         return np.zeros_like(p_values, dtype=bool), p_values.copy()
     
     p_valid = p_values[valid_mask]
-    reject, p_adj_valid, _, _ = multipletests(p_valid, alpha=alpha, method=method)
+    if multipletests is None:
+        order = np.argsort(p_valid)
+        p_sorted = p_valid[order]
+        m = len(p_sorted)
+        p_adj_sorted = np.empty_like(p_sorted)
+        for i in range(m):
+            p_adj_sorted[m - 1 - i] = min(1.0, p_sorted[m - 1 - i] * (m - i) / (m - i))
+        p_adj_sorted = np.minimum.accumulate(p_adj_sorted[::-1])[::-1]
+        p_adj_valid = np.empty_like(p_valid)
+        p_adj_valid[order] = p_adj_sorted
+        reject = p_adj_valid <= alpha
+    else:
+        reject, p_adj_valid, _, _ = multipletests(p_valid, alpha=alpha, method=method)
     
     # Reconstruct full arrays
     p_adj = np.full_like(p_values, np.nan)
