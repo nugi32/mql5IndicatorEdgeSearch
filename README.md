@@ -44,6 +44,7 @@ python -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -e ".[dev]"
+pip install tabulate # Also required, but pyproject.toml hasn't been updated yet.
 ```
 
 The package dependencies are defined in [pyproject.toml](pyproject.toml).
@@ -64,6 +65,12 @@ python scripts/run_pipeline.py \
 
 /mnt/projects/mql5IndicatorsEdge/data/raw_csv
 ```
+python scripts/run_pipeline.py \
+  data/raw_csv/XAUUSD_M1_export_20100101.csv \
+  --symbol XAUUSD \
+  --timeframe M1 \
+  --config-dir config \
+  --output-dir output
 
 This will create an output directory containing:
 

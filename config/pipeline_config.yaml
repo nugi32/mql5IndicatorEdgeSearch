@@ -44,3 +44,6 @@ stoch_thresholds: [20, 30, 70, 80]
 # Output
 output_dir: "./output"
 parquet_compression: "zstd"        # zstd or snappy
+
+top_n_atomic_for_combine: 15 
+max_corr_combine: 0.85         

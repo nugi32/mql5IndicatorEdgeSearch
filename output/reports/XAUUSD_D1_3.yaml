@@ -84,7 +84,7 @@ significance_results:
   prob_bull: 0.5751445293426514
   sample_size: 692
   p_value: 0.18514656009344588
-  p_adjusted: 0.9999997925442035
+  p_adjusted: 0.8561135743150791
   significant: false
   ci_lower: 0.5379989203594714
   ci_upper: 0.6114604121963357
@@ -93,7 +93,7 @@ significance_results:
   prob_bull: 0.5809248685836792
   sample_size: 692
   p_value: 0.07231206110707822
-  p_adjusted: 0.7443888643375699
+  p_adjusted: 0.4820804073805215
   significant: false
   ci_lower: 0.5438148389535438
   ci_upper: 0.6171413653373252
@@ -102,7 +102,7 @@ significance_results:
   prob_bull: 0.5910404920578003
   sample_size: 692
   p_value: 0.019053697059522534
-  p_adjusted: 0.35717395017342274
+  p_adjusted: 0.19937049103044951
   significant: false
   ci_lower: 0.5540050765798141
   ci_upper: 0.6270706532474135
@@ -111,7 +111,7 @@ significance_results:
   prob_bull: 0.5968208312988281
   sample_size: 692
   p_value: 0.011241898571767273
-  p_adjusted: 0.2645373932564891
+  p_adjusted: 0.14091957364609678
   significant: false
   ci_lower: 0.5598351981061985
   ci_upper: 0.6327374034560914
@@ -120,7 +120,7 @@ significance_results:
   prob_bull: 0.6069363951683044
   sample_size: 692
   p_value: 0.004327085486262483
-  p_adjusted: 0.1408818530411041
+  p_adjusted: 0.06876975147810017
   significant: false
   ci_lower: 0.5685901937606714
   ci_upper: 0.6412277154042114
@@ -129,7 +129,7 @@ significance_results:
   prob_bull: 0.6184971332550049
   sample_size: 692
   p_value: 0.0006400210409494012
-  p_adjusted: 0.03200105204747006
+  p_adjusted: 0.016274820755570487
   significant: true
   ci_lower: 0.5817450284054405
   ci_upper: 0.653940842163332
@@ -138,7 +138,7 @@ significance_results:
   prob_bull: 0.6199421882629395
   sample_size: 692
   p_value: 0.0005303837048615812
-  p_adjusted: 0.027501377289119024
+  p_adjusted: 0.014090790964979321
   significant: true
   ci_lower: 0.5817450284054405
   ci_upper: 0.653940842163332
@@ -147,7 +147,7 @@ significance_results:
   prob_bull: 0.6213873028755188
   sample_size: 692
   p_value: 0.0003977147343245946
-  p_adjusted: 0.024208722958888367
+  p_adjusted: 0.011998851306742005
   significant: true
   ci_lower: 0.5846720073435417
   ci_upper: 0.6567622990927618
@@ -156,7 +156,7 @@ significance_results:
   prob_bull: 0.6242774724960327
   sample_size: 692
   p_value: 0.00019925100407180985
-  p_adjusted: 0.01328340027145399
+  p_adjusted: 0.007546101856336628
   significant: true
   ci_lower: 0.5876003377940294
   ci_upper: 0.6595824045098052
@@ -165,8 +165,8 @@ significance_results:
   prob_bull: 0.6127167344093323
   sample_size: 692
   p_value: 0.001965746709231553
-  p_adjusted: 0.07733998212082144
-  significant: false
+  p_adjusted: 0.039314934184631056
+  significant: true
   ci_lower: 0.5744334555441089
   ci_upper: 0.6468813253558361
   effect_size: 0.05995047092437744
@@ -174,7 +174,7 @@ significance_results:
   prob_bull: 0.6083815097808838
   sample_size: 692
   p_value: 0.0035345703922684546
-  p_adjusted: 0.11781901307561515
+  p_adjusted: 0.05879410083487485
   significant: false
   ci_lower: 0.57151116149719
   ci_upper: 0.644055183535224
@@ -183,7 +183,7 @@ significance_results:
   prob_bull: 0.602601170539856
   sample_size: 692
   p_value: 0.005706798157972148
-  p_adjusted: 0.16644827960752098
+  p_adjusted: 0.08383262560581178
   significant: false
   ci_lower: 0.5656705472192389
   ci_upper: 0.6383989260781129
@@ -364,5 +364,5 @@ holdout_result:
 mql5_mapping: '// Condition: rsi_7 < 35.0
 
   // Optimal Horizon: 1'
-timestamp: '2026-08-01T10:00:46.132727'
+timestamp: '2026-08-02T01:31:10.567270'
 metadata: {}

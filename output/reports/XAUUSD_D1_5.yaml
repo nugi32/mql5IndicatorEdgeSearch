@@ -1,194 +1,194 @@
 edge_id: XAUUSD_D1_5
-hypothesis: Price rally after rsi_14 < 35.0
-entry_condition: rsi_14 < 35.0
+hypothesis: Price rally after rsi_14 < 30.0
+entry_condition: rsi_14 < 30.0
 frequency:
-  n_occurrence: 348
-  freq_per_year: 21.753722402875237
+  n_occurrence: 175
+  freq_per_year: 10.939371897997605
   date_range_start: '2009-12-31 00:00:00'
   date_range_end: '2025-12-30 00:00:00'
 optimal_horizon: 1
 significance_results:
 - horizon: 1
-  prob_bull: 0.49712643027305603
-  sample_size: 348
-  p_value: 0.34822499730675194
-  p_adjusted: 0.9999997925442035
+  prob_bull: 0.47999998927116394
+  sample_size: 175
+  p_value: 0.23252700446021146
+  p_adjusted: 0.9227883858953083
   significant: false
-  ci_lower: 0.44207405263042043
-  ci_upper: 0.5465571905056009
-  effect_size: -0.022249609231948853
+  ci_lower: 0.4016531852951677
+  ci_upper: 0.5480229129689189
+  effect_size: -0.03937605023384094
 - horizon: 2
-  prob_bull: 0.5201149582862854
-  sample_size: 348
-  p_value: 0.7919290315266647
+  prob_bull: 0.5142857432365417
+  sample_size: 175
+  p_value: 0.7327047733688101
   p_adjusted: 0.9999997925442035
   significant: false
-  ci_lower: 0.467692174829652
-  ci_upper: 0.5720984741942728
-  effect_size: -0.00706028938293457
+  ci_lower: 0.44072838264763026
+  ci_upper: 0.5872293405389881
+  effect_size: -0.012889504432678223
 - horizon: 3
-  prob_bull: 0.49425286054611206
-  sample_size: 348
-  p_value: 0.18709448337559875
-  p_adjusted: 0.9999997925442035
+  prob_bull: 0.4571428596973419
+  sample_size: 175
+  p_value: 0.06538554629038917
+  p_adjusted: 0.44932931891207684
   significant: false
-  ci_lower: 0.43923613082518914
-  ci_upper: 0.5437107338788428
-  effect_size: -0.032434940338134766
+  ci_lower: 0.38504754670344055
+  ci_upper: 0.5310792837367038
+  effect_size: -0.06954494118690491
 - horizon: 4
-  prob_bull: 0.5086206793785095
-  sample_size: 348
-  p_value: 0.205080998559374
-  p_adjusted: 0.9999997925442035
+  prob_bull: 0.49714285135269165
+  sample_size: 175
+  p_value: 0.20102039417435957
+  p_adjusted: 0.8853605262649724
   significant: false
-  ci_lower: 0.4534428094943991
-  ci_upper: 0.5579259473695796
-  effect_size: -0.030984461307525635
+  ci_lower: 0.4183434677171528
+  ci_upper: 0.5648818983708761
+  effect_size: -0.042462289333343506
 - horizon: 5
-  prob_bull: 0.5344827771186829
-  sample_size: 348
-  p_value: 0.6217037502180873
-  p_adjusted: 0.9999997925442035
+  prob_bull: 0.49714285135269165
+  sample_size: 175
+  p_value: 0.13511591369788523
+  p_adjusted: 0.7157926380423681
   significant: false
-  ci_lower: 0.4819843212242962
-  ci_upper: 0.5862282199595752
-  effect_size: -0.013165295124053955
+  ci_lower: 0.4183434677171528
+  ci_upper: 0.5648818983708761
+  effect_size: -0.050505220890045166
 - horizon: 6
-  prob_bull: 0.5287356376647949
-  sample_size: 348
-  p_value: 0.4841318849605867
+  prob_bull: 0.5199999809265137
+  sample_size: 175
+  p_value: 0.3787501272421614
   p_adjusted: 0.9999997925442035
   significant: false
-  ci_lower: 0.4762623185100517
-  ci_upper: 0.580581465809841
-  effect_size: -0.018668711185455322
+  ci_lower: 0.44072838264763026
+  ci_upper: 0.5872293405389881
+  effect_size: -0.027404367923736572
 - horizon: 7
-  prob_bull: 0.5287356376647949
-  sample_size: 348
-  p_value: 0.42871377925370635
-  p_adjusted: 0.9999997925442035
+  prob_bull: 0.49714285135269165
+  sample_size: 175
+  p_value: 0.12037556307202335
+  p_adjusted: 0.6695890695881299
   significant: false
-  ci_lower: 0.4762623185100517
-  ci_upper: 0.580581465809841
-  effect_size: -0.021105945110321045
+  ci_lower: 0.4183434677171528
+  ci_upper: 0.5648818983708761
+  effect_size: -0.052698731422424316
 - horizon: 8
-  prob_bull: 0.5431034564971924
-  sample_size: 348
-  p_value: 0.6897455941246267
+  prob_bull: 0.5142857432365417
+  sample_size: 175
+  p_value: 0.2937294193427462
   p_adjusted: 0.9999997925442035
   significant: false
-  ci_lower: 0.4905802228692232
-  ci_upper: 0.5946854536106162
-  effect_size: -0.01063770055770874
+  ci_lower: 0.44072838264763026
+  ci_upper: 0.5872293405389881
+  effect_size: -0.039455413818359375
 - horizon: 9
-  prob_bull: 0.5632184147834778
-  sample_size: 348
-  p_value: 0.622389951298193
+  prob_bull: 0.5142857432365417
+  sample_size: 175
+  p_value: 0.34111917234792277
   p_adjusted: 0.9999997925442035
   significant: false
-  ci_lower: 0.5106978673981996
-  ci_upper: 0.6143584581055647
-  effect_size: 0.013133108615875244
+  ci_lower: 0.44072838264763026
+  ci_upper: 0.5872293405389881
+  effect_size: -0.03579956293106079
 - horizon: 10
-  prob_bull: 0.5775862336158752
-  sample_size: 348
-  p_value: 0.25042079248155824
+  prob_bull: 0.5371428728103638
+  sample_size: 175
+  p_value: 0.7950620662425825
   p_adjusted: 0.9999997925442035
   significant: false
-  ci_lower: 0.5251199974690267
-  ci_upper: 0.6283582201946839
-  effect_size: 0.030669331550598145
+  ci_lower: 0.46326340478742495
+  ci_upper: 0.6094266754977832
+  effect_size: -0.00977402925491333
 - horizon: 11
-  prob_bull: 0.6091954112052917
-  sample_size: 348
-  p_value: 0.019134318759290503
-  p_adjusted: 0.35717395017342274
+  prob_bull: 0.5771428346633911
+  sample_size: 175
+  p_value: 0.5106419438115042
+  p_adjusted: 0.9999997925442035
   significant: false
-  ci_lower: 0.5570053912432537
-  ci_upper: 0.6590009891723393
-  effect_size: 0.06252223253250122
+  ci_lower: 0.49734993648142406
+  ci_upper: 0.6424386794516685
+  effect_size: 0.030469655990600586
 - horizon: 12
-  prob_bull: 0.6264367699623108
-  sample_size: 348
-  p_value: 0.005105554044247507
-  p_adjusted: 0.1588394591543669
+  prob_bull: 0.6000000238418579
+  sample_size: 175
+  p_value: 0.17402999334771163
+  p_adjusted: 0.835044393125518
   significant: false
-  ci_lower: 0.5715716511151167
-  ci_upper: 0.6728566214604227
-  effect_size: 0.07757008075714111
+  ci_lower: 0.5260207078841934
+  ci_upper: 0.6696833544221361
+  effect_size: 0.05113333463668823
 - horizon: 13
-  prob_bull: 0.6379310488700867
-  sample_size: 348
-  p_value: 0.001194509951113476
-  p_adjusted: 0.05394561069544731
+  prob_bull: 0.6342856884002686
+  sample_size: 175
+  p_value: 0.040484155329037375
+  p_adjusted: 0.3064557057530077
   significant: false
-  ci_lower: 0.586184774176678
-  ci_upper: 0.6866653905588077
-  effect_size: 0.0863834023475647
+  ci_lower: 0.5549403211514318
+  ci_upper: 0.6966791875281347
+  effect_size: 0.08273804187774658
 - horizon: 14
-  prob_bull: 0.6522988677024841
-  sample_size: 348
-  p_value: 0.00022459323619883342
-  p_adjusted: 0.01429229684901667
-  significant: true
-  ci_lower: 0.6008458960192886
-  ci_upper: 0.7004261608761433
-  effect_size: 0.09831398725509644
-- horizon: 15
-  prob_bull: 0.6637930870056152
-  sample_size: 348
-  p_value: 5.1464928322086934e-05
-  p_adjusted: 0.004803393310061447
-  significant: true
-  ci_lower: 0.6096661475476064
-  ci_upper: 0.7086590446437937
-  effect_size: 0.11078310012817383
-- horizon: 16
-  prob_bull: 0.6580459475517273
-  sample_size: 348
-  p_value: 0.0001571005447342788
-  p_adjusted: 0.010997038131399517
-  significant: true
-  ci_lower: 0.6037839925851956
-  ci_upper: 0.7031724427422259
-  effect_size: 0.10357362031936646
-- horizon: 17
-  prob_bull: 0.6637930870056152
-  sample_size: 348
-  p_value: 5.991621543599557e-05
-  p_adjusted: 0.005242668850649612
-  significant: true
-  ci_lower: 0.6096661475476064
-  ci_upper: 0.7086590446437937
-  effect_size: 0.10980820655822754
-- horizon: 18
-  prob_bull: 0.6580459475517273
-  sample_size: 348
-  p_value: 0.00012194672160870113
-  p_adjusted: 0.009484745014010088
-  significant: true
-  ci_lower: 0.6037839925851956
-  ci_upper: 0.7031724427422259
-  effect_size: 0.10527968406677246
-- horizon: 19
-  prob_bull: 0.6494252681732178
-  sample_size: 348
-  p_value: 0.00046383468173782916
-  p_adjusted: 0.024975713632036954
-  significant: true
-  ci_lower: 0.5949756075122921
-  ci_upper: 0.6949276925191614
-  effect_size: 0.0961715579032898
-- horizon: 20
-  prob_bull: 0.6350574493408203
-  sample_size: 348
-  p_value: 0.0021437721754704597
-  p_adjusted: 0.07898108014891167
+  prob_bull: 0.6399999856948853
+  sample_size: 175
+  p_value: 0.03259366456940693
+  p_adjusted: 0.27237898090865886
   significant: false
-  ci_lower: 0.5803338325076188
-  ci_upper: 0.6811475753638883
-  effect_size: 0.0847284197807312
-baseline_prob: 0.5530099868774414
+  ci_lower: 0.5607549530082774
+  ci_upper: 0.7020476449459365
+  effect_size: 0.08601510524749756
+- horizon: 15
+  prob_bull: 0.668571412563324
+  sample_size: 175
+  p_value: 0.003469491393514268
+  p_adjusted: 0.05826127057033393
+  significant: false
+  ci_lower: 0.58998708962632
+  ci_upper: 0.7287309547011309
+  effect_size: 0.11556142568588257
+- horizon: 16
+  prob_bull: 0.6742857098579407
+  sample_size: 175
+  p_value: 0.0023906089301568567
+  p_adjusted: 0.043868906141022734
+  significant: true
+  ci_lower: 0.5958661335634834
+  ci_upper: 0.7340350000386151
+  effect_size: 0.11981338262557983
+- horizon: 17
+  prob_bull: 0.691428542137146
+  sample_size: 175
+  p_value: 0.00045536316447125635
+  p_adjusted: 0.012865816392997402
+  significant: true
+  ci_lower: 0.6135709283262377
+  ci_upper: 0.749879473099803
+  effect_size: 0.1374436616897583
+- horizon: 18
+  prob_bull: 0.6800000071525574
+  sample_size: 175
+  p_value: 0.0007112856411013446
+  p_adjusted: 0.017109303258924236
+  significant: true
+  ci_lower: 0.6076579025124506
+  ci_upper: 0.7446094096389427
+  effect_size: 0.12723374366760254
+- horizon: 19
+  prob_bull: 0.6857143044471741
+  sample_size: 175
+  p_value: 0.0004240813639377894
+  p_adjusted: 0.012374833242774837
+  significant: true
+  ci_lower: 0.6135709283262377
+  ci_upper: 0.749879473099803
+  effect_size: 0.1324605941772461
+- horizon: 20
+  prob_bull: 0.6742857098579407
+  sample_size: 175
+  p_value: 0.001664449184093808
+  p_adjusted: 0.03445022729868579
+  significant: true
+  ci_lower: 0.5958661335634834
+  ci_upper: 0.7340350000386151
+  effect_size: 0.12395668029785156
+baseline_prob: 0.5539848804473877
 robustness:
   walk_forward:
     edge_direction_consistent: false
@@ -224,10 +224,10 @@ robustness:
             - 0
           - false
           - !!binary |
-            cAIncAIn4D9RFEVRFEXhPxAEQRAEQeA/cQ/3cA/34D9yHMdxHMfhPzIZkzEZk+E/MhmTMRmT4T+y
-            H/uxH/vhP9InfdInfeI/Uy7lUi7l4j80QAM0QAPkPxRFURRFUeQ/NU3TNE3T5D9VVVVVVVXlP3Zd
-            13Vd1+U/NlqjNVqj5T92Xdd1XdflP1VVVVVVVeU/FVIhFVIh5T/1SZ/0SZ/kPw==
-        n_samples: 315
+            B/EdxHcQ3z98B/EdxHfgPxPZTWQ3kd0/fwH9BfQX4D9/Af0F9BfgP3kN5TWU1+A/fwH9BfQX4D98
+            B/EdxHfgP3wH8R3Ed+A/dhPZTWQ34T9sKK+hvIbiP2Y0l9FcRuM/XUZzGc1l5D9bSW0ltZXkP1RY
+            T2E9heU/UltJbSW15T9OZDeR3UTmP1FeQ3kN5eU/T2E9hfUU5j9SW0ltJbXlPw==
+        n_samples: 171
       ranging:
         prob_bull: !!python/object/apply:numpy._core.multiarray._reconstruct
           args:
@@ -243,10 +243,10 @@ robustness:
           - *id002
           - false
           - !!binary |
-            J5tssskm2z9VVVVVVVXVP0YXXXTRRdc/ZZNNNtlk0z9VVVVVVVXVP1VVVVVVVdU/VVVVVVVV1T9G
-            F1100UXXPyebbLLJJts/F1100UUX3T8XXXTRRRfdP3TRRRdddOE/fPDBBx984D988MEHH3zgPwgf
-            fPDBB98/CB988MEH3z8IH3zwwQffP22yySabbOI/dNFFF1104T900UUXXXThPw==
-        n_samples: 33
+            AAAAAAAA0D8AAAAAAADgPwAAAAAAANA/AAAAAAAA0D8AAAAAAADQPwAAAAAAANA/AAAAAAAA0D8A
+            AAAAAADgPwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgPwAA
+            AAAAAOA/AAAAAAAA4D8AAAAAAADgPwAAAAAAAOA/AAAAAAAA4D8AAAAAAADgPw==
+        n_samples: 4
       high_vol:
         prob_bull: !!python/object/apply:numpy._core.multiarray._reconstruct
           args:
@@ -262,10 +262,10 @@ robustness:
           - *id002
           - false
           - !!binary |
-            AAAAAACA4j8AAAAAAIDmPwAAAAAAAOY/AAAAAACA5j8AAAAAAIDoPwAAAAAAgOg/AAAAAACA6T8A
-            AAAAAADpPwAAAAAAAOs/AAAAAAAA7D8AAAAAAADuPwAAAAAAgO0/AAAAAACA7j8AAAAAAADuPwAA
-            AAAAAO4/AAAAAAAA7T8AAAAAAIDrPwAAAAAAgOo/AAAAAACA6T8AAAAAAIDoPw==
-        n_samples: 64
+            VVVVVVVV5T/btm3btm3rP9u2bdu2bes/Pc/zPM/z7D96nud5nufpPz3P8zzP8+w/27Zt27Zt6z96
+            nud5nufpP3qe53me5+k/27Zt27Zt6z89z/M8z/PsP57neZ7nee4/AAAAAAAA8D+e53me53nuPwAA
+            AAAAAPA/AAAAAAAA8D89z/M8z/PsP9u2bdu2bes/ep7neZ7n6T8YhmEYhmHoPw==
+        n_samples: 21
       low_vol:
         prob_bull: !!python/object/apply:numpy._core.multiarray._reconstruct
           args:
@@ -281,13 +281,13 @@ robustness:
           - *id002
           - false
           - !!binary |
-            HMdxHMdx3D+apmmapmnaP3qe53me59k/27Zt27Zt2z8cx3Ecx3HcP9u2bdu2bds/mqZpmqZp2j8c
-            x3Ecx3HcP13XdV3Xdd0/Pc/zPM/z3D9d13Vd13XdP9/3fd/3fd8/v+/7vu/73j8hCIIgCILgPxAE
-            QRAEQeA/EARBEARB4D9iGIZhGIbhPzEMwzAMw+A/AAAAAAAA4D+/7/u+7/vePw==
-        n_samples: 126
+            7RvWvmHt2z9BnhLkKUHeP5qZmZmZmdk/QZ4S5ClB3j9r37D2DWvfP0GeEuQpQd4/mpmZmZmZ2T/t
+            G9a+Ye3bP8PaN6x9w9o/7RvWvmHt2z/tG9a+Ye3bPxdddNFFF90/QZ4S5ClB3j9r37D2DWvfP0Ge
+            EuQpQd4/a9+w9g1r3z+eEuQpQZ7iP0qQpwR5SuA/SpCnBHlK4D/fsPYNa9/gPw==
+        n_samples: 55
     most_robust_regime: high_vol
   parameter_sensitivity:
-    original_threshold: 35.0
+    original_threshold: 30.0
     original_prob_bull: !!python/object/apply:numpy._core.multiarray._reconstruct
       args:
       - *id001
@@ -302,12 +302,12 @@ robustness:
       - *id002
       - false
       - !!binary |
-        tg79ZuvQ3z+BTIoXyKTgP20d+s3Wod8/7mmE5Z5G4D+5pxGWexrhP3C2Dv1m6+A/cLYO/Wbr4D+o
-        EZZ7GmHhPyleIJPiBeI/YbmnEZZ74j926Ddbh37jP1K8QCbFC+Q/5p5GWO5p5D8d+s3Wod/kP7Hc
-        0wjLPeU/Z+vQb7YO5T+x3NMIyz3lP2fr0G+2DuU/eYFMihfI5D9BJsULZFLkPw==
+        uB6F61G43j9QB3VQB3XgPx3UQR3UQd0/rZY3RjDR3z+tljdGMNHfP6RwPQrXo+A/rZY3RjDR3z9Q
+        B3VQB3XgP1AHdVAHdeA/nqyWN0Yw4T/mjRFM9HfiPzMzMzMzM+M/J6vljRFM5D97FK5H4XrkPxwj
+        mOjvZOU/b4xgor+T5T9pyLnPLiDmP8P1KFyPwuU/Fl/xFV/x5T9vjGCiv5PlPw==
     shifted_conditions:
     - shift_pct: -15
-      shifted_threshold: 29.75
+      shifted_threshold: 25.5
       prob_bull: !!python/object/apply:numpy._core.multiarray._reconstruct
         args:
         - *id001
@@ -322,12 +322,12 @@ robustness:
         - *id002
         - false
         - !!binary |
-          HUuZBLsK3z+wq/DlhhjgP5YyCXYVvtw/3vlbnNZs3z/e+Vuc1mzfP3Fas32ieuA/n6geNPLO3z8R
-          A9KxlEngP3Fas32ieuA/9Lc4rdk+4T83xIB0LGXiP7khBqRjKeM/nNZsn6ge5D9ehS83xIDkP0A6
-          ljIJduU/oZF3/han5T8j7/wtTmvmP2JAOpYyCeY/I+/8LU5r5j9iQDqWMgnmPw==
-      correlation: 0.9616984086576933
+          Uyu1Uiu14j/0Qi/0Qi/kP7ETO7ETO+E/1Uqt1Eqt5D9yIzdyIzfiP3IjN3IjN+I/ciM3ciM34j8z
+          MzMzMzPjP3IjN3IjN+I/MzMzMzMz4z8UO7ETO7HjP5ZaqZVaqeU/V2qlVmql5j/4gR/4gR/oP9mJ
+          ndiJneg/uZEbuZEb6T+5kRu5kRvpP7mRG7mRG+k/2Ymd2Imd6D+5kRu5kRvpPw==
+      correlation: 0.9585745469340103
     - shift_pct: 15
-      shifted_threshold: 40.25
+      shifted_threshold: 34.5
       prob_bull: !!python/object/apply:numpy._core.multiarray._reconstruct
         args:
         - *id001
@@ -342,27 +342,27 @@ robustness:
         - *id002
         - false
         - !!binary |
-          cDoTa3xa4D/yacHpTKzhP1GYtPf5b+E/UoEvrn7Q4T9TUyUbiJHiP9PHYnbKweI/8yQyDdvN4j/z
-          Da3DXy7jP5PfubWyauM/1JlY49OC4z+0Dn+5zDfkP1Tgi6sfdOQ/9bGYnXKw5D8V+OLqBx3lP1Wy
-          gRgpNeU/dSbW+LTg5D+19/lvUZjkPxQm7X3+W+Q/tA5/ucw35D+0JQQDSNfjPw==
-      correlation: 0.9351796339755554
-    sensitivity_score: 0.9484390213166243
+          d7zYEnyb3z9N5brjxZbgPyrXHS+2BN8/d7zYEnyb3z8Rh07aB8ngPy+2BN/mr+A/EYdO2gfJ4D98
+          m7/CrEbhP+evMKtRxOE/NJXrjhdb4j9FHDppHyTjP3TSPkgG1OM/3+avMKtR5D9K+yAZUM/kPw6d
+          tA+SAeU/LMxqFHHo5D/wbf4KsxrlPyzMahRx6OQ/SvsgGVDP5D/f5q8wq1HkPw==
+      correlation: 0.9715979721063581
+    sensitivity_score: 0.9650862595201842
   cost_model:
     entry_slippage_pips: 3.0
     exit_slippage_pips: 3.0
     total_cost_pips: 6.0
-    gross_expectancy_pips: 211040.828125
-    net_expectancy_pips: 211034.828125
-    expectancy_r: 0.881817638874054
+    gross_expectancy_pips: 269620.03125
+    net_expectancy_pips: 269614.03125
+    expectancy_r: 1.1265932321548462
 validated_period: walk-forward validated
 holdout_result:
-  n_samples: 16
+  n_samples: 7
   prob_bull: !!python/object/apply:numpy._core.multiarray.scalar
   - *id002
   - !!binary |
-    AAAAAAAA1D8=
-mql5_mapping: '// Condition: rsi_14 < 35.0
+    kiRJkiRJ0j8=
+mql5_mapping: '// Condition: rsi_14 < 30.0
 
   // Optimal Horizon: 1'
-timestamp: '2026-08-01T10:00:46.136782'
+timestamp: '2026-08-02T01:31:10.571279'
 metadata: {}

@@ -13,7 +13,7 @@
 #include <Trade\Trade.mqh>
 
 //--- Input parameters (tunable)
-input int          MAGIC_NUMBER      = 224972;        // Order magic
+input int          MAGIC_NUMBER      = 777057;        // Order magic
 input double       LOT_SIZE          = 0.1;                   // Position size
 input int          EXIT_BARS         = 1;           // Exit horizon
 input double       VIRTUAL_SL_PIPS   = 20.0;                  // SL in pips

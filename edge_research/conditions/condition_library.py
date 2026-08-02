@@ -269,6 +269,9 @@ class ConditionGenerator:
         float
             Pearson correlation coefficient in [-1, 1].
         """
+        if col1 == col2:
+            return 1.0
+        
         if col1 not in self.df.columns or col2 not in self.df.columns:
             return 0.0
         
