@@ -6,6 +6,7 @@ End-to-end edge discovery pipeline with CLI interface.
 
 import argparse
 import logging
+from itertools import combinations
 from pathlib import Path
 from typing import Optional
 
@@ -14,6 +15,7 @@ import pandas as pd
 import yaml
 
 from edge_research.conditions.condition_library import (
+    AtomicCondition,
     CombinedCondition,
     ConditionEvaluator,
     ConditionGenerator,
@@ -41,6 +43,32 @@ from edge_research.validation.walk_forward import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def indicator_family(column: str) -> str:
+    """
+    Extract a coarse indicator family name from a column name, e.g.
+    'rsi_14' -> 'rsi', 'cci_20' -> 'cci', 'stoch_14_3_3_k' -> 'stoch'.
+
+    Used as a cheap, always-on guard against combining two conditions on the
+    same underlying indicator family (e.g. rsi_14 AND rsi_21), independent of
+    whatever the measured statistical correlation happens to be for a given
+    dataset/threshold pair.
+    """
+    return column.split("_")[0]
+
+
+def is_diverse_combo(atoms, max_corr_combine: float, gen: "ConditionGenerator") -> bool:
+    """
+    True if every pair of atoms in the combo is from a different indicator
+    family AND is not statistically redundant (correlation <= max_corr_combine).
+    """
+    for a, b in combinations(atoms, 2):
+        if indicator_family(a.column) == indicator_family(b.column):
+            return False
+        if gen.are_redundant(a.column, b.column, max_corr_combine):
+            return False
+    return True
 
 
 def load_config(config_path: str | Path) -> dict:
@@ -121,6 +149,16 @@ def run_pipeline(
             break
         atomic_candidates.append(atom)
 
+    # MA conditions add a 5th indicator family ('ma'), needed if you want combos
+    # with more than 4 atoms (max_atoms_per_combo > 4), since is_diverse_combo()
+    # requires every atom in a combo to come from a distinct indicator family.
+    if pipeline_config.get("include_ma_conditions", False):
+        ma_candidates = list(gen.generate_ma_conditions())
+        if max_conditions:
+            remaining = max(0, max_conditions - len(atomic_candidates))
+            ma_candidates = ma_candidates[:remaining]
+        atomic_candidates.extend(ma_candidates)
+
     logger.info(f"  Generated {len(atomic_candidates)} atomic conditions")
 
     # --- Frequency filter setup (also needed before ranking atomics for combination) ---
@@ -167,25 +205,80 @@ def run_pipeline(
         ranked.append((abs(p - baseline_1bar), cond, mask))
     ranked.sort(key=lambda x: x[0], reverse=True)
 
+    # Stratified selection: rank WITHIN each indicator family, then take the top-K
+    # from each family, rather than a single global top-N ranking. A global ranking
+    # tends to be dominated by whichever family happens to have the largest raw
+    # effect sizes (e.g. RSI), starving every other family out of the combination
+    # pool entirely -- which silently makes multi-family combos (max_atoms_per_combo
+    # > 1) impossible. Stratifying guarantees every family gets a fair shot.
     top_n_for_combine = pipeline_config.get("top_n_atomic_for_combine", 15)
-    top_pool = [(c, m) for _, c, m in ranked[:top_n_for_combine]]
+
+    by_family = {}
+    for score, cond, mask in ranked:
+        fam = indicator_family(cond.column)
+        by_family.setdefault(fam, []).append((score, cond, mask))
+
+    n_families_available = len(by_family)
+    per_family_k = max(1, top_n_for_combine // max(1, n_families_available))
+
+    top_pool = []
+    for fam, items in by_family.items():
+        top_pool.extend([(c, m) for _, c, m in items[:per_family_k]])
+
+    # If stratified selection left room (fewer families than slots), fill remaining
+    # slots with the next-best conditions globally, regardless of family.
+    remaining_slots = top_n_for_combine - len(top_pool)
+    if remaining_slots > 0:
+        already = {id(c) for c, _ in top_pool}
+        for score, cond, mask in ranked:
+            if id(cond) in already:
+                continue
+            top_pool.append((cond, mask))
+            remaining_slots -= 1
+            if remaining_slots <= 0:
+                break
+
     logger.info(
-        f"  Selected top {len(top_pool)} atomic conditions "
-        f"(by 1-bar effect size) for pairwise combination"
+        f"  Selected top {len(top_pool)} atomic conditions for combination "
+        f"(stratified across {n_families_available} families: "
+        f"{sorted(by_family.keys())}, ~{per_family_k} per family)"
     )
 
     # --- Generate combined (AND) conditions from the top pool only ---
+    # max_corr_combine: skip pairs whose raw statistical correlation exceeds this.
+    # max_atoms_per_combo: how many atoms per combined condition (2 = pairs, 3 = triples, ...).
+    # Every combo is additionally required to use a DIFFERENT indicator family per atom
+    # (see indicator_family()/is_diverse_combo()), so e.g. rsi_14 AND rsi_21 is never
+    # generated regardless of measured correlation -- only genuinely different indicator
+    # classes (RSI, CCI, Stochastic, Momentum, ...) get combined together.
     max_corr_combine = pipeline_config.get("max_corr_combine", 0.85)
+    max_atoms_per_combo = pipeline_config.get("max_atoms_per_combo", 2)
+
+    top_conds = [c for c, _ in top_pool]
+
+    n_families = len({indicator_family(c.column) for c in top_conds})
+    if max_atoms_per_combo > n_families:
+        logger.warning(
+            f"  max_atoms_per_combo={max_atoms_per_combo} but only {n_families} distinct "
+            f"indicator families are present in the top pool "
+            f"({sorted({indicator_family(c.column) for c in top_conds})}). "
+            f"Combos larger than {n_families} atoms are impossible (each atom must be "
+            f"from a different family) and will simply be skipped. Add more indicator "
+            f"families (e.g. set include_ma_conditions: true) or lower max_atoms_per_combo."
+        )
 
     combined_candidates = []
-    top_conds = [c for c, _ in top_pool]
-    for i, atom1 in enumerate(top_conds):
-        for atom2 in top_conds[i + 1:]:
-            if gen.are_redundant(atom1.column, atom2.column, max_corr_combine):
-                continue
-            combined_candidates.append(CombinedCondition([atom1, atom2]))
+    for k in range(2, max_atoms_per_combo + 1):
+        n_before = len(combined_candidates)
+        for combo in combinations(top_conds, k):
+            if is_diverse_combo(combo, max_corr_combine, gen):
+                combined_candidates.append(CombinedCondition(list(combo)))
+        logger.info(
+            f"  {k}-atom combos: {len(combined_candidates) - n_before} generated "
+            f"(from {len(top_conds)} pooled atomic conditions)"
+        )
 
-    logger.info(f"  Generated {len(combined_candidates)} combined (2-atom) conditions")
+    logger.info(f"  Generated {len(combined_candidates)} combined conditions total")
 
     candidates = [c for c, _ in atomic_evaluated] + combined_candidates
     logger.info(
@@ -286,17 +379,34 @@ def run_pipeline(
         # Regime stress
         regime_result = stress_test_condition_by_regime(mask, engine, regime_classifier)
 
-        # Parameter sensitivity
-        try:
-            param_result = sensitivity_test_condition(
-                cond,
-                df,
-                engine,
-                shift_pct=pipeline_config.get("param_shift_pct", 15),
+        # Parameter sensitivity: sensitivity_test_condition() only supports single
+        # AtomicCondition objects (it reads condition.column directly), not
+        # CombinedCondition. Skip combined conditions entirely rather than crashing;
+        # for atomic conditions, still skip non-numeric thresholds (e.g. MA vs 'close'),
+        # which have nothing to shift by +/-15%.
+        if isinstance(cond, CombinedCondition):
+            logger.debug(
+                f"Skipping parameter sensitivity for '{cond}': "
+                f"combined conditions are not supported by sensitivity_test_condition"
             )
-        except Exception as e:
-            logger.warning(f"Parameter sensitivity failed: {e}")
             param_result = {'sensitivity_score': np.nan}
+        elif isinstance(cond.threshold, str):
+            logger.debug(
+                f"Skipping parameter sensitivity for '{cond}': "
+                f"non-numeric threshold (column-to-column comparison)"
+            )
+            param_result = {'sensitivity_score': np.nan}
+        else:
+            try:
+                param_result = sensitivity_test_condition(
+                    cond,
+                    df,
+                    engine,
+                    shift_pct=pipeline_config.get("param_shift_pct", 15),
+                )
+            except Exception as e:
+                logger.warning(f"Parameter sensitivity failed: {e}")
+                param_result = {'sensitivity_score': np.nan}
 
         # Cost model
         cost_result = cost_model.apply_costs_to_forward_profile(

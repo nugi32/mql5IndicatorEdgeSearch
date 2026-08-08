@@ -72,6 +72,13 @@ python scripts/run_pipeline.py \
   --config-dir config \
   --output-dir output
 
+  python scripts/run_pipeline.py \
+  data/raw_csv/XAUUSD_M15_export_20100101.csv \
+  --symbol XAUUSD \
+  --timeframe M15 \
+  --config-dir config \
+  --output-dir output
+
 This will create an output directory containing:
 
 - a Parquet storage folder

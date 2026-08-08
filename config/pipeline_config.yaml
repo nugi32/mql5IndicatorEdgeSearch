@@ -45,5 +45,7 @@ stoch_thresholds: [20, 30, 70, 80]
 output_dir: "./output"
 parquet_compression: "zstd"        # zstd or snappy
 
-top_n_atomic_for_combine: 15 
-max_corr_combine: 0.85         
+top_n_atomic_for_combine: 15
+max_corr_combine: 0.85          # bukan 1 — nilai 1 masih tepat mematikan filter tapi lebih baik pakai angka wajar
+max_atoms_per_combo: 5
+include_ma_conditions: true     # aktifkan family ke-5 (MA) supaya 5-way mungkin terjadi
