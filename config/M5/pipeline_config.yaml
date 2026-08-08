@@ -1,12 +1,12 @@
-# Pipeline Configuration for edge_research -- M1 profile
+# Pipeline Configuration for edge_research -- M5 profile
 #
-# ASSUMPTION THIS FILE IS BUILT ON: dataset size of roughly 1,000,000
-# bars (~3 years of continuous M1). This is a ballpark, not your actual file size.
+# ASSUMPTION THIS FILE IS BUILT ON: dataset size of roughly 400,000
+# bars (~5 years of continuous M5). This is a ballpark, not your actual file size.
 #
 # ACTION REQUIRED BEFORE TRUSTING RESULTS FROM THIS PROFILE:
 # After Phase 1 runs, check the log line:
 #   "Ingestion complete: N bars loaded"
-# If your actual N differs a lot from 1,000,000, rescale the three
+# If your actual N differs a lot from 400,000, rescale the three
 # wf_* values below using the same ratio this file uses:
 #   wf_train_bars  ~= 0.35 * N
 #   wf_test_bars   ~= 0.07 * N
@@ -29,18 +29,18 @@ min_horizon: 1                     # Minimum bars (always 1)
 # is available -- this keeps "50 occurrences" from being a trivially easy
 # bar to clear on M1/M5 just because there are millions of bars to trigger
 # on. Tune down if this filters out too much on your actual dataset.
-min_occurrence: 200
-min_freq_per_year: 50.0
+min_occurrence: 150
+min_freq_per_year: 30.0
 
 # Statistical significance
 alpha: 0.05                        # Significance level for hypothesis tests
 fdr_method: "fdr_bh"               # Benjamini-Hochberg FDR correction
 
-# Walk-forward validation -- sized for ~1,000,000 bars (~3 years of continuous M1).
+# Walk-forward validation -- sized for ~400,000 bars (~5 years of continuous M5).
 # See the ACTION REQUIRED note above if your actual bar count is different.
-wf_train_bars: 350000
-wf_test_bars: 70000
-wf_step_bars: 35000
+wf_train_bars: 140000
+wf_test_bars: 28000
+wf_step_bars: 14000
 
 # Regime classification
 atr_percentile_low: 25             # ATR < 25th percentile = low vol

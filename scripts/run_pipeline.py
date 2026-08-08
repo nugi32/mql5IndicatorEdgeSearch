@@ -31,8 +31,15 @@ from edge_research.reporting.report_generator import (
     EdgeReportGenerator,
     generate_markdown_report,
 )
+from edge_research.selection.strategy_gate import GateThresholds, passes_strategy_gate
+from edge_research.simulation.trade_simulator import (
+    TradeSimConfig,
+    infer_direction,
+    simulate_condition,
+)
 from edge_research.validation.cost_model import CostModel
 from edge_research.validation.parameter_sensitivity import sensitivity_test_condition
+from edge_research.validation.permutation_test import rotation_permutation_test
 from edge_research.validation.regime_stress_test import (
     RegimeClassifier,
     stress_test_condition_by_regime,
@@ -349,12 +356,45 @@ def run_pipeline(
         pip_value=pipeline_config.get("pip_value", 0.0001),
     )
 
+    wf_train_bars = pipeline_config.get("wf_train_bars", 5000)
+    wf_test_bars = pipeline_config.get("wf_test_bars", 1000)
+    wf_step_bars = pipeline_config.get("wf_step_bars", 500)
+
     wf_validator = WalkForwardValidator(
         df,
-        train_bars=pipeline_config.get("wf_train_bars", 5000),
-        test_bars=pipeline_config.get("wf_test_bars", 1000),
-        step_bars=pipeline_config.get("wf_step_bars", 500),
+        train_bars=wf_train_bars,
+        test_bars=wf_test_bars,
+        step_bars=wf_step_bars,
     )
+
+    # WalkForwardValidator silently produces zero windows if
+    # wf_train_bars + wf_test_bars doesn't fit inside len(df) -- which
+    # then makes every single condition's 'edge_direction_consistent'
+    # default to False (see validate_condition_walk_forward's empty-window
+    # branch), which in turn makes the Phase 7e gate's robust_walk_forward
+    # check fail for EVERY edge, with no other evidence considered. This
+    # is a data-size/config mismatch, not a signal quality problem, and it
+    # is easy to miss under the per-condition "No valid windows" spam
+    # logged deeper in validate_condition_walk_forward. Fail loudly once,
+    # here, with the actual numbers, instead.
+    if len(wf_validator.get_windows()) == 0:
+        logger.warning(
+            f"⚠ Walk-forward validation will produce ZERO windows for this run: "
+            f"wf_train_bars ({wf_train_bars}) + wf_test_bars ({wf_test_bars}) = "
+            f"{wf_train_bars + wf_test_bars} bars needed per window, but the "
+            f"dataset only has {len(df)} bars. Every condition's walk-forward "
+            f"result will default to 'not robust', which will make the Phase 7e "
+            f"strategy gate reject ALL candidates regardless of their trade "
+            f"simulation or permutation test results. Lower wf_train_bars/"
+            f"wf_test_bars/wf_step_bars in pipeline_config.yaml to fit this "
+            f"timeframe's bar count (e.g. for {len(df)} bars, something like "
+            f"wf_train_bars={max(100, len(df) // 3)}, "
+            f"wf_test_bars={max(50, len(df) // 15)}, "
+            f"wf_step_bars={max(25, len(df) // 30)} would produce multiple "
+            f"windows), or set gate_require_walk_forward: false to proceed "
+            f"without this check (not recommended for anything beyond a "
+            f"smoke test)."
+        )
 
     regime_classifier = RegimeClassifier(
         df,
@@ -464,13 +504,173 @@ def run_pipeline(
 
         edge['holdout'] = holdout_result
 
+    # PHASE 7c: Realistic Trade Simulation
+    # See PROJECT_DIRECTION.md, section 4. Simulates every condition that
+    # survived Phase 5-7b with a concrete, EA-realistic ATR-based SL/TP
+    # scheme and spread/slippage cost, instead of relying only on the
+    # fixed-horizon directional probability from Phase 5-6.
+    logger.info("\n[PHASE 7c] Realistic Trade Simulation...")
+    sim_sl_atr_mult = pipeline_config.get("sim_sl_atr_mult", 1.5)
+    sim_tp_atr_mult = pipeline_config.get("sim_tp_atr_mult", 3.0)
+    sim_use_trailing = pipeline_config.get("sim_use_trailing_stop", False)
+    sim_trail_atr_mult = pipeline_config.get("sim_trail_atr_mult", 1.5)
+    sim_max_holding_bars = pipeline_config.get("sim_max_holding_bars", max_horizon)
+    sim_atr_column = pipeline_config.get("sim_atr_column", "atr_14")
+
+    for edge in validated_edges:
+        optimal_h = int(edge['sig_results'].iloc[0]['horizon'])
+        cond_prob_bull_at_h = float(edge['sig_results'].iloc[0]['prob_bull'])
+        direction = infer_direction(cond_prob_bull_at_h, edge['baseline_prob'])
+
+        sim_config = TradeSimConfig(
+            direction=direction,
+            atr_column=sim_atr_column,
+            sl_atr_mult=sim_sl_atr_mult,
+            tp_atr_mult=sim_tp_atr_mult,
+            use_trailing_stop=sim_use_trailing,
+            trail_atr_mult=sim_trail_atr_mult,
+            max_holding_bars=sim_max_holding_bars,
+            spread_price_units=pipeline_config.get("spread_pips", 2.0)
+            * pipeline_config.get("pip_value", 0.0001),
+            slippage_price_units=pipeline_config.get("slippage_pips", 1.0)
+            * pipeline_config.get("pip_value", 0.0001),
+        )
+
+        try:
+            sim_result = simulate_condition(df, edge['mask'], sim_config)
+        except KeyError as e:
+            logger.warning(f"Trade simulation skipped for {edge['edge_id']}: {e}")
+            sim_result = simulate_condition(
+                df, np.zeros_like(edge['mask']), sim_config
+            )  # yields an empty/NaN result via the n_trades==0 path
+
+        edge['trade_sim'] = sim_result
+        edge['direction'] = direction
+
+    n_sim_positive = sum(
+        1 for e in validated_edges
+        if e['trade_sim'].n_trades > 0 and e['trade_sim'].expectancy_r > 0
+    )
+    logger.info(
+        f"✓ Trade simulation complete: {n_sim_positive} / {len(validated_edges)} "
+        f"edges have positive simulated expectancy_r"
+    )
+
+    # PHASE 7d: Rotation-Based Permutation Test
+    # See PROJECT_DIRECTION.md, section 4. A stricter, autocorrelation-aware
+    # significance check that complements (not replaces) Phase 6's z-test.
+    logger.info("\n[PHASE 7d] Rotation-Based Permutation Test...")
+    perm_n = pipeline_config.get("permutation_n", 500)
+    perm_alpha = pipeline_config.get("alpha", 0.05)
+    perm_seed = pipeline_config.get("permutation_random_state", None)
+
+    for edge in validated_edges:
+        optimal_h = int(edge['sig_results'].iloc[0]['horizon'])
+        outcome_series = engine.forward_matrix[:, optimal_h - 1]
+        perm_result = rotation_permutation_test(
+            trigger_mask=edge['mask'],
+            outcome_series=outcome_series,
+            n_permutations=perm_n,
+            alpha=perm_alpha,
+            random_state=perm_seed,
+        )
+        edge['permutation'] = perm_result
+
+    n_perm_sig = sum(1 for e in validated_edges if e['permutation'].get('significant'))
+    logger.info(
+        f"✓ Permutation testing complete: {n_perm_sig} / {len(validated_edges)} "
+        f"edges pass the rotation permutation test"
+    )
+
+    # PHASE 7e: Final Strategy Selection Gate
+    # See PROJECT_DIRECTION.md, section 4. Combines Phase 6 significance,
+    # Phase 7 walk-forward robustness, Phase 7d permutation significance,
+    # and Phase 7c simulated expectancy/profit factor into a single
+    # pass/fail decision. Only gate-passing edges reach Phase 9 (MQL5
+    # code generation).
+    #
+    # NOTE ON SCHEMA: validate_condition_walk_forward() (Phase 7, existing
+    # code in edge_research/validation/walk_forward.py) returns its
+    # consistency flag under the key 'edge_direction_consistent', not
+    # 'consistent'. report_generator.py already reads it under that name
+    # (see EdgeReportGenerator / generate_markdown_report), so we read the
+    # same key here rather than guessing at a different one -- reading the
+    # wrong key would silently default every edge's robust_walk_forward to
+    # False and make the gate impossible to pass.
+    logger.info("\n[PHASE 7e] Final Strategy Selection Gate...")
+    gate_thresholds = GateThresholds(
+        alpha=pipeline_config.get("alpha", 0.05),
+        min_sim_trades=pipeline_config.get("gate_min_sim_trades", 30),
+        min_profit_factor=pipeline_config.get("gate_min_profit_factor", 1.1),
+        require_walk_forward=pipeline_config.get("gate_require_walk_forward", True),
+        require_permutation=pipeline_config.get("gate_require_permutation", True),
+    )
+
+    gate_rows = []
+    for edge in validated_edges:
+        significant = bool(edge['sig_results'].iloc[0]['significant'])
+        wf_info = edge['robustness'].get('walk_forward')
+        robust_wf = bool(wf_info.get('edge_direction_consistent', False)) \
+            if isinstance(wf_info, dict) else False
+
+        passed, reasons = passes_strategy_gate(
+            significant=significant,
+            robust_walk_forward=robust_wf,
+            permutation_result=edge['permutation'],
+            sim_result=edge['trade_sim'],
+            thresholds=gate_thresholds,
+        )
+        edge['gate_passed'] = passed
+        edge['gate_reasons'] = reasons
+
+        gate_rows.append({
+            "edge_id": edge['edge_id'],
+            "condition": str(edge['condition']),
+            "direction": edge['direction'],
+            "gate_passed": passed,
+            "reasons": "; ".join(reasons) if reasons else "",
+            "sim_n_trades": edge['trade_sim'].n_trades,
+            "sim_expectancy_r": edge['trade_sim'].expectancy_r,
+            "sim_profit_factor": edge['trade_sim'].profit_factor,
+            "sim_win_rate": edge['trade_sim'].win_rate,
+            "permutation_p_value": edge['permutation'].get('p_value'),
+            "robust_walk_forward": robust_wf,
+        })
+
+    n_gate_passed = sum(1 for e in validated_edges if e['gate_passed'])
+    logger.info(
+        f"✓ Strategy gate: {n_gate_passed} / {len(validated_edges)} edges "
+        f"passed ALL criteria and are recommended for EA generation"
+    )
+
+    gate_summary_df = pd.DataFrame(gate_rows).sort_values(
+        by=["gate_passed", "sim_expectancy_r"], ascending=[False, False]
+    )
+    gate_summary_path = output_dir / "STRATEGY_GATE_RESULTS.csv"
+    gate_summary_df.to_csv(gate_summary_path, index=False)
+    logger.info(f"✓ Gate results written to {gate_summary_path}")
+
     # PHASE 8: Report Generation
     logger.info("\n[PHASE 8] Report Generation...")
 
     edge_reports = []
     for edge in validated_edges:
-        # Generate MQL5 stub
-        mql5_stub = f"// Condition: {edge['condition']}\n// Optimal Horizon: {edge['sig_results'].iloc[0]['horizon']}"
+        gate_note = (
+            "RECOMMENDED FOR EA GENERATION"
+            if edge['gate_passed']
+            else f"NOT RECOMMENDED ({'; '.join(edge['gate_reasons'])})"
+        )
+        sim = edge['trade_sim']
+        mql5_stub = (
+            f"// Condition: {edge['condition']}\n"
+            f"// Optimal Horizon: {edge['sig_results'].iloc[0]['horizon']}\n"
+            f"// Direction: {edge['direction']}\n"
+            f"// Strategy gate: {gate_note}\n"
+            f"// Simulated (Phase 7c): n_trades={sim.n_trades}, "
+            f"expectancy_r={sim.expectancy_r:.4f}, "
+            f"profit_factor={sim.profit_factor:.2f}\n"
+            f"// Permutation test (Phase 7d): p_value={edge['permutation'].get('p_value')}"
+        )
 
         report = EdgeReportGenerator.generate_edge_report(
             edge_id=edge['edge_id'],
@@ -488,7 +688,7 @@ def run_pipeline(
 
         edge_reports.append(report)
 
-    logger.info(f"✓ Generated {len(edge_reports)} edge reports")
+    logger.info(f"✓ Generated {len(edge_reports)} edge reports (all candidates, gate status included)")
 
     # Save individual reports
     reports_dir = output_dir / "reports"
@@ -504,18 +704,30 @@ def run_pipeline(
     logger.info(f"✓ Summary Markdown: {md_path}")
 
     # PHASE 9: MQL5 Code Generation
-    logger.info("\n[PHASE 9] MQL5 Code Generation...")
+    # Only edges that passed the Phase 7e strategy gate are turned into EAs.
+    # See PROJECT_DIRECTION.md, section 4 -- reducing the number of
+    # surviving edges is the intended outcome of this pipeline, not a bug.
+    logger.info("\n[PHASE 9] MQL5 Code Generation (gate-passing edges only)...")
 
     ea_dir = output_dir / "generated_ea"
     ea_dir.mkdir(exist_ok=True)
 
+    gate_passed_ids = {e['edge_id'] for e in validated_edges if e['gate_passed']}
+    n_generated = 0
     for report in edge_reports:
+        if report.edge_id not in gate_passed_ids:
+            continue
         try:
             MQL5CodeGenerator.save_ea_file(report, ea_dir)
+            n_generated += 1
         except Exception as e:
             logger.warning(f"Failed to generate MQL5 for {report.edge_id}: {e}")
 
-    logger.info(f"✓ Generated {len(edge_reports)} .mq5 EA files")
+    logger.info(
+        f"✓ Generated {n_generated} .mq5 EA files "
+        f"({len(edge_reports) - n_generated} candidates did not pass the strategy gate "
+        f"and were skipped; see {gate_summary_path.name} for reasons)"
+    )
 
     # Summary
     logger.info("\n" + "=" * 80)
