@@ -1,14 +1,14 @@
-# Pipeline Configuration for edge_research -- M30 profile
+# Pipeline Configuration for edge_research -- M15 profile
 #
-# ASSUMPTION THIS FILE IS BUILT ON: dataset size of roughly 33,000
-# bars (~3 years of continuous M30, same historical window as the M1
-# profile scaled down by the M1:M30 bar-count ratio of 30x). This is a
+# ASSUMPTION THIS FILE IS BUILT ON: dataset size of roughly 65,000
+# bars (~3 years of continuous M15, same historical window as the M1
+# profile scaled down by the M1:M15 bar-count ratio of ~15x). This is a
 # ballpark, not your actual file size.
 #
 # ACTION REQUIRED BEFORE TRUSTING RESULTS FROM THIS PROFILE:
 # After Phase 1 runs, check the log line:
 #   "Ingestion complete: N bars loaded"
-# If your actual N differs a lot from 33,000, rescale the three
+# If your actual N differs a lot from 65,000, rescale the three
 # wf_* values below using the same ratio this file uses:
 #   wf_train_bars  ~= 0.35 * N
 #   wf_test_bars   ~= 0.07 * N
@@ -26,20 +26,20 @@ max_horizon: 20                    # Maximum bars to look ahead (1 to 20)
 min_horizon: 1                     # Minimum bars (always 1)
 
 # Frequency filtering
-# Scaled down further than the M15 profile -- M30 has half the bar count
-# of M15 (and 1/30 of M1) over the same historical window.
-min_occurrence: 75
-min_freq_per_year: 15.0
+# Scaled down further than the M5 profile since M15 has 1/3 the bar count
+# of M5 (and 1/15 of M1) over the same historical window.
+min_occurrence: 100
+min_freq_per_year: 20.0
 
 # Statistical significance
 alpha: 0.05                        # Significance level for hypothesis tests
 fdr_method: "fdr_bh"               # Benjamini-Hochberg FDR correction
 
-# Walk-forward validation -- sized for ~33,000 bars (~3 years of continuous M30).
+# Walk-forward validation -- sized for ~65,000 bars (~3 years of continuous M15).
 # See the ACTION REQUIRED note above if your actual bar count is different.
-wf_train_bars: 11550
-wf_test_bars: 2310
-wf_step_bars: 1155
+wf_train_bars: 22750
+wf_test_bars: 4550
+wf_step_bars: 2275
 
 # Regime classification
 atr_percentile_low: 25             # ATR < 25th percentile = low vol
@@ -64,9 +64,10 @@ pip_value: 0.01
 holdout_pct: 0.15                  # Reserve 15% of data as final untouched test set
 
 # Trade simulation (Phase 7c)
-# Same widened stop as the M5/M15 profiles: keeps the 1:2 risk:reward ratio
-# (33.3% breakeven win rate) while keeping timeframe the isolated variable
-# under test across profiles.
+# Widened vs the tight M1 defaults (1.5 / 3.0), same rationale as the M5
+# profile: keeps the 1:2 risk:reward ratio (33.3% breakeven win rate)
+# while making the fixed 0.3 spread a smaller fraction of the stop distance,
+# so timeframe stays the isolated variable when comparing across profiles.
 sim_sl_atr_mult: 3.0
 sim_tp_atr_mult: 6.0
 sim_use_trailing_stop: false

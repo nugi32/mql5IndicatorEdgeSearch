@@ -66,16 +66,16 @@ python scripts/run_pipeline.py \
 /mnt/projects/mql5IndicatorsEdge/data/raw_csv
 ```
 python scripts/run_pipeline.py \
-  data/raw_csv/XAUUSD_M1_export_20100101.csv \
+  data/raw_csv/XAUUSD_H1_export_20100101.csv \
   --symbol XAUUSD \
-  --timeframe M1 \
+  --timeframe H1 \
   --config-dir config \
   --output-dir output
 
   python scripts/run_pipeline.py \
-  data/raw_csv/XAUUSD_M15_export_20100101.csv \
+  data/raw_csv/XAUUSD_M30_export_20100101.csv \
   --symbol XAUUSD \
-  --timeframe M15 \
+  --timeframe M30 \
   --config-dir config \
   --output-dir output
 

@@ -20,7 +20,7 @@
 # and having the gate reject everything.
 
 # Forward-looking horizon parameters
-max_horizon: 20                    # Maximum bars to look ahead (1 to 20)
+max_horizon: 80                    # Maximum bars to look ahead (1 to 80)
 min_horizon: 1                     # Minimum bars (always 1)
 
 # Frequency filtering
@@ -38,9 +38,9 @@ fdr_method: "fdr_bh"               # Benjamini-Hochberg FDR correction
 
 # Walk-forward validation -- sized for ~400,000 bars (~5 years of continuous M5).
 # See the ACTION REQUIRED note above if your actual bar count is different.
-wf_train_bars: 140000
-wf_test_bars: 28000
-wf_step_bars: 14000
+wf_train_bars: ~0.35 * N   # bukan 140000
+wf_test_bars:  ~0.07 * N   # bukan 28000
+wf_step_bars:  ~0.035 * N  # bukan 14000
 
 # Regime classification
 atr_percentile_low: 25             # ATR < 25th percentile = low vol
@@ -62,7 +62,7 @@ param_shift_pct: 15                # +/-15% parameter shift for sensitivity test
 # wrong doesn't break the pipeline, but it silently makes Phase 7c's
 # simulated expectancy_r unrealistically optimistic (near-zero cost) or
 # unrealistically pessimistic (cost way too high).
-spread_pips: 2.0                   # Spread in pips
+spread_pips: 30.0                   # Spread in pips
 slippage_pips: 1.0                 # Slippage in pips (on entry and exit)
 pip_value: 0.0001                  # Pip value (forex majors default)
 
@@ -70,11 +70,12 @@ pip_value: 0.0001                  # Pip value (forex majors default)
 holdout_pct: 0.15                  # Reserve 15% of data as final untouched test set
 
 # Trade simulation (Phase 7c)
-sim_sl_atr_mult: 1.5
-sim_tp_atr_mult: 3.0
+sim_sl_atr_mult: 3.0
+sim_tp_atr_mult: 6.0
 sim_use_trailing_stop: false
 sim_trail_atr_mult: 1.5
 sim_atr_column: "atr_14"
+sim_max_holding_bars: 60   # kasih waktu lebih buat target tercapai, tanpa mengubah horizon yang dipakai Phase 5-6 untuk deteksi sinyal
 # sim_max_holding_bars defaults to max_horizon if omitted
 
 # Rotation permutation test (Phase 7d)
