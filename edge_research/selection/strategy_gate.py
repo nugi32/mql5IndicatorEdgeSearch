@@ -23,6 +23,17 @@ GATES (all enabled gates must pass)
                                above breakeven; the goal is filtering out
                                clearly broken edges, not hand-picking a
                                "best" one)
+7. sim_expectancy_ci_lower  - OPTIONAL (off by default). If TradeSimConfig's
+                               bootstrap_n > 0, requires the LOWER bound of
+                               the bootstrap confidence interval on
+                               expectancy_r to be positive, not just the
+                               point estimate. This is stricter than gate 5:
+                               a condition with few trades or high
+                               trade-to-trade variance can show a positive
+                               mean expectancy_r purely by chance even
+                               though the interval around it comfortably
+                               includes zero or negative values. See
+                               PROJECT_DIRECTION.md section 8.
 
 Only conditions passing every enabled gate should proceed to MQL5 code
 generation (Phase 9). Conditions that fail are still worth recording for
@@ -30,6 +41,7 @@ transparency -- see PROJECT_DIRECTION.md, section 4.
 """
 
 import logging
+import math
 from dataclasses import dataclass
 from typing import List, Tuple
 
@@ -45,6 +57,13 @@ class GateThresholds:
     min_profit_factor: float = 1.1
     require_walk_forward: bool = True
     require_permutation: bool = True
+    # If True, additionally requires the LOWER bound of the bootstrap CI on
+    # expectancy_r (sim_result.expectancy_r_ci_low) to be > 0. Only takes
+    # effect when the trade simulation was run with bootstrap_n > 0 in
+    # TradeSimConfig -- if the CI wasn't computed (NaN), this gate is
+    # skipped rather than silently failing every edge, and a warning is
+    # surfaced via the reasons list so the gap is visible.
+    require_positive_ci_lower: bool = False
 
 
 def passes_strategy_gate(
@@ -108,5 +127,18 @@ def passes_strategy_gate(
                 f"profit factor below threshold "
                 f"({sim_result.profit_factor:.2f} < {thresholds.min_profit_factor})"
             )
+
+        if thresholds.require_positive_ci_lower:
+            ci_low = getattr(sim_result, "expectancy_r_ci_low", float("nan"))
+            if math.isnan(ci_low):
+                reasons.append(
+                    "require_positive_ci_lower is enabled but no bootstrap CI "
+                    "was computed (set bootstrap_n > 0 in TradeSimConfig)"
+                )
+            elif not (ci_low > 0):
+                reasons.append(
+                    f"bootstrap CI lower bound on expectancy_r is not positive "
+                    f"(CI low={ci_low:.4f})"
+                )
 
     return (len(reasons) == 0, reasons)

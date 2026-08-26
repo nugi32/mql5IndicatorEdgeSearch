@@ -37,7 +37,7 @@ from edge_research.simulation.trade_simulator import (
     infer_direction,
     simulate_condition,
 )
-from edge_research.validation.cost_model import CostModel
+from edge_research.validation.cost_model import CostModel, cost_aware_prefilter
 from edge_research.validation.parameter_sensitivity import sensitivity_test_condition
 from edge_research.validation.permutation_test import rotation_permutation_test
 from edge_research.validation.regime_stress_test import (
@@ -347,18 +347,112 @@ def run_pipeline(
 
     logger.info(f"✓ Significance testing: {len(sig_conditions)} conditions passed")
 
-    # PHASE 7: Robustness Validation
-    logger.info("\n[PHASE 7] Robustness Validation...")
-
+    # Cost model is needed for both the Phase 6b pre-filter below and the
+    # Phase 7 robustness loop's per-edge cost estimate, so it's built once
+    # here. spread_atr_mult (optional) makes the cost estimate scale with
+    # each trigger's own entry-time volatility instead of a single fixed
+    # spread across the whole dataset -- see cost_model.py docstring and
+    # PROJECT_DIRECTION.md section 8 ("cost sensitivity").
     cost_model = CostModel(
         spread_pips=pipeline_config.get("spread_pips", 2.0),
         slippage_pips=pipeline_config.get("slippage_pips", 1.0),
         pip_value=pipeline_config.get("pip_value", 0.0001),
+        spread_atr_mult=pipeline_config.get("spread_atr_mult", None),
+        atr_column=pipeline_config.get("sim_atr_column", "atr_14"),
     )
+
+    # PHASE 6b: Cost-Aware Pre-Filter
+    # See PROJECT_DIRECTION.md section 8 ("cost sensitivity sweep" /
+    # cost-aware filtering). Cheaply estimates each significant condition's
+    # cost-adjusted expectancy_r using the same horizon-based cost model as
+    # Phase 5-6 (no SL/TP, no intrabar path -- see cost_aware_prefilter's
+    # docstring), and drops candidates that don't even clear this lenient
+    # bar BEFORE they pay for the much more expensive Phase 7 robustness
+    # stack (walk-forward, regime stress, parameter sensitivity, Phase 7c
+    # trade simulation, Phase 7d permutation test). Disabled by default
+    # (min_precheck_expectancy_r absent -> filter still runs but with a
+    # 0.0 margin, i.e. "must not already be underwater on the cheap
+    # estimate"); set precheck_enabled: false in pipeline_config.yaml to
+    # skip this phase entirely and let every significant condition through
+    # to Phase 7 as before.
+    logger.info("\n[PHASE 6b] Cost-Aware Pre-Filter...")
+    precheck_enabled = pipeline_config.get("precheck_enabled", True)
+    min_precheck_expectancy_r = pipeline_config.get("min_precheck_expectancy_r", 0.0)
+
+    if precheck_enabled:
+        prefiltered_conditions = []
+        n_dropped = 0
+        all_expectancy_r = []
+        for cond_res in sig_conditions:
+            cost_result = cost_model.apply_costs_to_forward_profile(
+                cond_res['mask'], df, engine, cond_res['optimal_horizon']
+            )
+            cond_res['precheck_cost_result'] = cost_result
+            if np.isfinite(cost_result.get('expectancy_r', np.nan)):
+                all_expectancy_r.append(cost_result['expectancy_r'])
+            passed, reason = cost_aware_prefilter(cost_result, min_precheck_expectancy_r)
+            if passed:
+                prefiltered_conditions.append(cond_res)
+            else:
+                n_dropped += 1
+                logger.debug(f"Phase 6b dropped '{cond_res['description']}': {reason}")
+
+        logger.info(
+            f"✓ Cost-aware pre-filter: {len(prefiltered_conditions)} / {len(sig_conditions)} "
+            f"conditions passed (min_expectancy_r={min_precheck_expectancy_r}), "
+            f"{n_dropped} dropped before entering the expensive Phase 7 robustness stack"
+        )
+        if all_expectancy_r:
+            arr = np.array(all_expectancy_r)
+            logger.info(
+                f"  Cost-adjusted expectancy_r distribution across all {len(arr)} "
+                f"significant conditions: min={arr.min():.4f}, "
+                f"median={np.median(arr):.4f}, mean={arr.mean():.4f}, max={arr.max():.4f}"
+            )
+        if len(prefiltered_conditions) == 0 and len(sig_conditions) > 0:
+            logger.warning(
+                "⚠ Phase 6b dropped EVERY significant condition. This can be a genuine "
+                "result (this timeframe's raw edges don't clear realistic transaction "
+                "costs at all -- see the expectancy_r distribution above: if the max is "
+                "also <= 0, that's the case here), or a config/cost mismatch (e.g. "
+                "spread_pips/pip_value/spread_atr_mult not set correctly for this "
+                "symbol -- see PROJECT_DIRECTION.md section 10). Check the distribution "
+                "logged above before concluding the timeframe itself is unviable. To "
+                "inspect Phase 5-6 candidates without the cost filter, rerun with "
+                "precheck_enabled: false in pipeline_config.yaml."
+            )
+        sig_conditions = prefiltered_conditions
+    else:
+        logger.info("✓ Cost-aware pre-filter disabled (precheck_enabled: false)")
+
+    # PHASE 7: Robustness Validation
+    logger.info("\n[PHASE 7] Robustness Validation...")
 
     wf_train_bars = pipeline_config.get("wf_train_bars", 5000)
     wf_test_bars = pipeline_config.get("wf_test_bars", 1000)
     wf_step_bars = pipeline_config.get("wf_step_bars", 500)
+
+    # Fail fast with a clear message rather than a cryptic TypeError deep
+    # inside WalkForwardValidator._generate_windows() if one of these was
+    # left as a non-numeric placeholder in pipeline_config.yaml (e.g. a
+    # formula comment like "~0.35 * N" that was never filled in with an
+    # actual number for this timeframe's bar count).
+    for _name, _val in (
+        ("wf_train_bars", wf_train_bars),
+        ("wf_test_bars", wf_test_bars),
+        ("wf_step_bars", wf_step_bars),
+    ):
+        if not isinstance(_val, (int, float)) or isinstance(_val, bool):
+            raise ValueError(
+                f"pipeline_config.yaml: '{_name}' must be a number, got "
+                f"{_val!r} ({type(_val).__name__}). This is often a leftover "
+                f"formula placeholder (e.g. '~0.35 * N') that needs to be "
+                f"replaced with an actual integer bar count for this "
+                f"timeframe's dataset size (len(df)={len(df)})."
+            )
+    wf_train_bars = int(wf_train_bars)
+    wf_test_bars = int(wf_test_bars)
+    wf_step_bars = int(wf_step_bars)
 
     wf_validator = WalkForwardValidator(
         df,
@@ -448,10 +542,14 @@ def run_pipeline(
                 logger.warning(f"Parameter sensitivity failed: {e}")
                 param_result = {'sensitivity_score': np.nan}
 
-        # Cost model
-        cost_result = cost_model.apply_costs_to_forward_profile(
-            mask, df, engine, optimal_h
-        )
+        # Cost model -- reuse the Phase 6b pre-filter's result when
+        # available (same inputs, avoids recomputing) instead of a second
+        # full pass over every trigger.
+        cost_result = cond_res.get('precheck_cost_result')
+        if cost_result is None:
+            cost_result = cost_model.apply_costs_to_forward_profile(
+                mask, df, engine, optimal_h
+            )
 
         robustness_info = {
             'walk_forward': wf_result,
@@ -516,6 +614,19 @@ def run_pipeline(
     sim_trail_atr_mult = pipeline_config.get("sim_trail_atr_mult", 1.5)
     sim_max_holding_bars = pipeline_config.get("sim_max_holding_bars", max_horizon)
     sim_atr_column = pipeline_config.get("sim_atr_column", "atr_14")
+    # Variable/volatility-and-session-aware cost model (opt-in, see
+    # TradeSimConfig docstring). None/empty -> behaves exactly as before.
+    sim_spread_atr_mult = pipeline_config.get("spread_atr_mult", None)
+    sim_session_multipliers_cfg = pipeline_config.get("session_spread_multipliers", None)
+    sim_session_multipliers = (
+        [tuple(row) for row in sim_session_multipliers_cfg]
+        if sim_session_multipliers_cfg
+        else None
+    )
+    # Bootstrap CI on expectancy_r (off by default -- adds compute cost).
+    sim_bootstrap_n = pipeline_config.get("sim_bootstrap_n", 0)
+    sim_bootstrap_ci = pipeline_config.get("sim_bootstrap_ci", 0.95)
+    sim_bootstrap_seed = pipeline_config.get("sim_bootstrap_random_state", None)
 
     for edge in validated_edges:
         optimal_h = int(edge['sig_results'].iloc[0]['horizon'])
@@ -534,6 +645,11 @@ def run_pipeline(
             * pipeline_config.get("pip_value", 0.0001),
             slippage_price_units=pipeline_config.get("slippage_pips", 1.0)
             * pipeline_config.get("pip_value", 0.0001),
+            spread_atr_mult=sim_spread_atr_mult,
+            session_spread_multipliers=sim_session_multipliers,
+            bootstrap_n=sim_bootstrap_n,
+            bootstrap_ci=sim_bootstrap_ci,
+            bootstrap_random_state=sim_bootstrap_seed,
         )
 
         try:
@@ -604,6 +720,7 @@ def run_pipeline(
         min_profit_factor=pipeline_config.get("gate_min_profit_factor", 1.1),
         require_walk_forward=pipeline_config.get("gate_require_walk_forward", True),
         require_permutation=pipeline_config.get("gate_require_permutation", True),
+        require_positive_ci_lower=pipeline_config.get("gate_require_positive_ci_lower", False),
     )
 
     gate_rows = []
@@ -631,6 +748,8 @@ def run_pipeline(
             "reasons": "; ".join(reasons) if reasons else "",
             "sim_n_trades": edge['trade_sim'].n_trades,
             "sim_expectancy_r": edge['trade_sim'].expectancy_r,
+            "sim_expectancy_r_ci_low": edge['trade_sim'].expectancy_r_ci_low,
+            "sim_expectancy_r_ci_high": edge['trade_sim'].expectancy_r_ci_high,
             "sim_profit_factor": edge['trade_sim'].profit_factor,
             "sim_win_rate": edge['trade_sim'].win_rate,
             "permutation_p_value": edge['permutation'].get('p_value'),
@@ -643,9 +762,17 @@ def run_pipeline(
         f"passed ALL criteria and are recommended for EA generation"
     )
 
-    gate_summary_df = pd.DataFrame(gate_rows).sort_values(
-        by=["gate_passed", "sim_expectancy_r"], ascending=[False, False]
-    )
+    gate_summary_columns = [
+        "edge_id", "condition", "direction", "gate_passed", "reasons",
+        "sim_n_trades", "sim_expectancy_r", "sim_expectancy_r_ci_low",
+        "sim_expectancy_r_ci_high", "sim_profit_factor", "sim_win_rate",
+        "permutation_p_value", "robust_walk_forward",
+    ]
+    gate_summary_df = pd.DataFrame(gate_rows, columns=gate_summary_columns)
+    if len(gate_summary_df) > 0:
+        gate_summary_df = gate_summary_df.sort_values(
+            by=["gate_passed", "sim_expectancy_r"], ascending=[False, False]
+        )
     gate_summary_path = output_dir / "STRATEGY_GATE_RESULTS.csv"
     gate_summary_df.to_csv(gate_summary_path, index=False)
     logger.info(f"✓ Gate results written to {gate_summary_path}")

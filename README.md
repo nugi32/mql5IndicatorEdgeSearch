@@ -73,9 +73,9 @@ python scripts/run_pipeline.py \
   --output-dir output
 
   python scripts/run_pipeline.py \
-  data/raw_csv/XAUUSD_M30_export_20100101.csv \
+  data/raw_csv/XAUUSD_M15_export_20100101.csv \
   --symbol XAUUSD \
-  --timeframe M30 \
+  --timeframe M15 \
   --config-dir config \
   --output-dir output
 
