@@ -70,8 +70,8 @@ pip_value: 0.01                   # Pip value (forex majors default)
 holdout_pct: 0.15                  # Reserve 15% of data as final untouched test set
 
 # Trade simulation (Phase 7c)
-sim_sl_atr_mult: 3.0
-sim_tp_atr_mult: 6.0
+sim_sl_atr_mult: 1.5
+sim_tp_atr_mult: 3.0
 sim_use_trailing_stop: false
 sim_trail_atr_mult: 1.5
 sim_atr_column: "atr_14"
@@ -86,6 +86,56 @@ gate_min_sim_trades: 30
 gate_min_profit_factor: 1.1
 gate_require_walk_forward: true
 gate_require_permutation: true
+
+
+# --- Cost realism & validation hardening (added this revision) ---------
+# See PROJECT_DIRECTION.md section 8 ("Suggested next steps / future
+# work") and the "kenapa lolos di Python tapi gagal di MQL5" discussion.
+# All of these are OPT-IN and default to behavior identical to before this
+# revision if left commented out / omitted.
+
+# Phase 6b: cost-aware pre-filter. Drops significant conditions whose
+# cost-adjusted expectancy_r (using the same simple horizon-based cost
+# model as Phase 5-6, no SL/TP) doesn't clear this margin, BEFORE they pay
+# for the expensive Phase 7 robustness stack. 0.0 = "must not already be
+# underwater on the cheap estimate". Set precheck_enabled: false to
+# disable this phase entirely.
+precheck_enabled: true
+min_precheck_expectancy_r: 0.0
+
+# Variable/volatility-aware spread (Phase 5-6 cost model AND Phase 7c trade
+# simulation). When set, spread for each triggered bar/trade is computed
+# as `spread_atr_mult * atr_at_entry` (price units) instead of the fixed
+# spread_pips/spread_price_units above -- this makes cost scale with the
+# market's own realized volatility at entry time rather than assuming a
+# constant spread across the whole dataset. Leave commented out to keep
+# the fixed-spread behavior.
+# spread_atr_mult: 0.03
+
+# Optional session-based spread multiplier on top of the fixed or
+# ATR-scaled spread above. List of [start_hour, end_hour, multiplier]
+# triples in broker/server time (same timezone the data was exported in --
+# no conversion is done). A range may wrap past midnight, e.g. [22, 6, x]
+# covers 22:00-23:59 and 00:00-05:59. Example below widens spread during
+# the low-liquidity Asia session and tightens it during the London/NY
+# overlap -- tune to your broker's actual observed spread behavior before
+# relying on it.
+# session_spread_multipliers:
+#   - [0, 7, 1.5]     # Asia session -- wider spread
+#   - [7, 16, 1.0]    # London session -- baseline
+#   - [13, 16, 0.9]   # London/NY overlap -- tightest
+#   - [16, 24, 1.1]   # NY session tail -- slightly wider
+
+# Bootstrap confidence interval on Phase 7c's expectancy_r. Off by default
+# (sim_bootstrap_n: 0) since it adds compute cost per condition. When
+# enabled, gate_require_positive_ci_lower can require the CI LOWER bound
+# (not just the point estimate) to be positive in Phase 7e -- stricter
+# than the existing sim_expectancy_positive gate, since it accounts for
+# trade-to-trade variance and small sample sizes.
+sim_bootstrap_n: 0
+sim_bootstrap_ci: 0.95
+# sim_bootstrap_random_state: 42   # uncomment for reproducible CIs
+gate_require_positive_ci_lower: false
 
 # Condition generation
 rsi_thresholds: [20, 25, 30, 35, 70, 75, 80]

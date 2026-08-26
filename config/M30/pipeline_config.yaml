@@ -62,9 +62,9 @@ param_shift_pct: 15                # +/-15% parameter shift for sensitivity test
 # wrong doesn't break the pipeline, but it silently makes Phase 7c's
 # simulated expectancy_r unrealistically optimistic (near-zero cost) or
 # unrealistically pessimistic (cost way too high).
-spread_pips: 2.0                   # Spread in pips
+spread_pips: 30.0                   # Spread in pips -- FIXED: was 2.0 (forex default), combined with wrong pip_value this made cost ~150x too small for XAUUSD
 slippage_pips: 1.0                 # Slippage in pips (on entry and exit)
-pip_value: 0.0001                  # Pip value (forex majors default)
+pip_value: 0.01                    # Pip value -- FIXED: was 0.0001 (forex default) which made spread_pips*pip_value = 0.003 price units instead of the intended 0.3 for XAUUSD, silently near-zero-cost
 
 # Holdout set
 holdout_pct: 0.15                  # Reserve 15% of data as final untouched test set
