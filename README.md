@@ -80,9 +80,9 @@ python scripts/run_pipeline.py \
   --output-dir output
 
     python scripts/run_pipeline.py \
-  data/raw_csv/halfy/XAUUSD_M30.csv \
+  data/raw_csv/halfy/XAUUSD_M15.csv \
   --symbol XAUUSD \
-  --timeframe M30 \
+  --timeframe M15 \
   --config-dir config \
   --output-dir output
 

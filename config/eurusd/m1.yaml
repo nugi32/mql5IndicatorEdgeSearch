@@ -53,15 +53,18 @@ adx_ranging_threshold: 20          # ADX < 20 = ranging regime
 param_shift_pct: 15                # +/-15% parameter shift for sensitivity test
 
 # Cost model (entry and exit) -- set for EURUSD (major forex pair, 5-digit
-# quoting), NOT the XAUUSD values used in config/xauusd/. spread_pips *
-# pip_value = 2.0 * 0.0001 = 0.0002 price units (~2 pip spread), a
-# reasonable ECN/major-pair baseline -- adjust to your actual broker's
-# observed EURUSD spread before trusting Phase 7c's expectancy_r. This is
+# quoting), NOT the XAUUSD values used in config/xauusd/. User-confirmed
+# real broker spread: 1.16053 - 1.16052 = 0.00001 price units (1 point =
+# 0.1 pip in 5-digit quoting). spread_pips * pip_value = 0.1 * 0.0001 =
+# 0.00001 price units, matching that observed spread. This is
 # symbol-dependent, not timeframe-dependent, so it does NOT need to change
 # across the M1/M5/M15/M30/H1/H4/D1 profiles in this folder -- only change
-# it if you switch symbols again.
-spread_pips: 2.0                   # Spread in pips (typical EURUSD major-pair baseline)
-slippage_pips: 1.0                 # Slippage in pips (on entry and exit)
+# it if you switch symbols again or your broker's spread differs.
+spread_pips: 0.1                   # Spread in pips (0.1 pip = 1 point, per confirmed 1.16053/1.16052 quote)
+slippage_pips: 1.0                 # Slippage in pips (on entry and exit) -- NOTE: at this tight a
+                                    # spread, 1.0 pip of slippage is now 10x the spread itself and
+                                    # will dominate total cost. Worth revisiting if your broker's
+                                    # actual execution slippage on EURUSD is smaller than 1 full pip.
 pip_value: 0.0001                  # Pip value for EURUSD / 5-digit forex majors
 
 # Holdout set
