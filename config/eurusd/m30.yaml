@@ -1,4 +1,4 @@
-# Pipeline Configuration for edge_research -- M30 profile
+# Pipeline Configuration for edge_research (EURUSD) -- M30 profile
 #
 # ASSUMPTION THIS FILE IS BUILT ON: dataset size of roughly 125,000
 # bars (~10 years of continuous M30). This is a ballpark, not your actual file size.
@@ -52,19 +52,17 @@ adx_ranging_threshold: 20          # ADX < 20 = ranging regime
 # Parameter sensitivity
 param_shift_pct: 15                # +/-15% parameter shift for sensitivity test
 
-# Cost model (entry and exit) -- FOREX DEFAULTS (5-digit quoting).
-# IMPORTANT: these are timeframe-independent but SYMBOL-dependent. The
-# values below are correct for majors like EURUSD/GBPUSD. For XAUUSD or
-# any non-forex instrument, override pip_value and spread_pips so that
-# spread_pips * pip_value matches that symbol's real spread in price units
-# (e.g. for XAUUSD: pip_value: 0.01, spread_pips: 30.0  ->  0.3 price units,
-# per the discussion in PROJECT_DIRECTION.md section 10). Getting this
-# wrong doesn't break the pipeline, but it silently makes Phase 7c's
-# simulated expectancy_r unrealistically optimistic (near-zero cost) or
-# unrealistically pessimistic (cost way too high).
-spread_pips: 30.0                   # Spread in pips -- FIXED: was 2.0 (forex default), combined with wrong pip_value this made cost ~150x too small for XAUUSD
+# Cost model (entry and exit) -- set for EURUSD (major forex pair, 5-digit
+# quoting), NOT the XAUUSD values used in config/xauusd/. spread_pips *
+# pip_value = 2.0 * 0.0001 = 0.0002 price units (~2 pip spread), a
+# reasonable ECN/major-pair baseline -- adjust to your actual broker's
+# observed EURUSD spread before trusting Phase 7c's expectancy_r. This is
+# symbol-dependent, not timeframe-dependent, so it does NOT need to change
+# across the M1/M5/M15/M30/H1/H4/D1 profiles in this folder -- only change
+# it if you switch symbols again.
+spread_pips: 2.0                   # Spread in pips (typical EURUSD major-pair baseline)
 slippage_pips: 1.0                 # Slippage in pips (on entry and exit)
-pip_value: 0.01                    # Pip value -- FIXED: was 0.0001 (forex default) which made spread_pips*pip_value = 0.003 price units instead of the intended 0.3 for XAUUSD, silently near-zero-cost
+pip_value: 0.0001                  # Pip value for EURUSD / 5-digit forex majors
 
 # Holdout set
 holdout_pct: 0.15                  # Reserve 15% of data as final untouched test set
