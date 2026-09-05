@@ -1,3 +1,24 @@
+# ⚠️⚠️⚠️ READ THIS BEFORE USING --config-dir config ⚠️⚠️⚠️
+# This file is XAUUSD-only (spread_pips/pip_value below are gold's cost
+# structure, NOT forex). `--config-dir X` only ever reads
+# `X/pipeline_config.yaml` -- it does NOT know your symbol or timeframe,
+# so passing `--config-dir config` with a different --symbol (e.g.
+# EURUSD) silently applies XAUUSD's cost model to that symbol. This
+# already happened once: EURUSD runs at M1/M5/H4 all showed 0 edges
+# passing Phase 6b because gold's cost (spread_pips=30, effectively ~62
+# pips round-trip with slippage) was applied to a currency pair.
+#
+# USE ONE OF THESE INSTEAD:
+#   XAUUSD any timeframe:  --config-dir config/XAUUSD/<TF>   (e.g. config/XAUUSD/M30)
+#   EURUSD any timeframe:  --config-dir config/EURUSD/<TF>   (e.g. config/EURUSD/H4)
+# where <TF> is one of M1, M5, M15, M30, H1, H4, D1. Each of those
+# folders is self-contained (pipeline_config.yaml + known_at_delay.yaml)
+# and matches its symbol's real cost structure and its timeframe's bar
+# counts/horizons. Don't manually copy timeframe configs into this file
+# and run with `--config-dir config` -- that manual-copy step is exactly
+# how the EURUSD mix-up above happened.
+# ⚠️⚠️⚠️ ⚠️⚠️⚠️ ⚠️⚠️⚠️ ⚠️⚠️⚠️ ⚠️⚠️⚠️ ⚠️⚠️⚠️ ⚠️⚠️⚠️ ⚠️⚠️⚠️ ⚠️⚠️⚠️ ⚠️⚠️⚠️ ⚠️⚠️⚠️ ⚠️⚠️⚠️
+#
 # Pipeline Configuration for edge_research -- M30 profile
 #
 # ASSUMPTION THIS FILE IS BUILT ON: dataset size of roughly 33,000

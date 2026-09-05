@@ -1,3 +1,11 @@
+# NOTE: this file is XAUUSD-only (see cost model section below). For a
+# symbol-explicit path that can't be mixed up, use config/XAUUSD/H4/
+# instead of config/H4/ -- they're identical in content, but the
+# symbol-scoped path prevents accidentally applying gold's cost model to
+# another symbol (this exact mistake broke EURUSD Phase 6b results when
+# --config-dir config was used with --symbol EURUSD). For EURUSD, use
+# config/EURUSD/H4/.
+#
 # Pipeline Configuration for edge_research -- H4 profile
 #
 # ASSUMPTION THIS FILE IS BUILT ON: dataset size of roughly 23,000

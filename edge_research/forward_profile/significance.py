@@ -5,6 +5,7 @@ Two-sided proportion z-test + Benjamini-Hochberg FDR correction.
 """
 
 import logging
+import math
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
@@ -126,7 +127,12 @@ def proportion_ztest_per_horizon(
         # Z-test
         z_stat = (p_obs - p0) / se
         if stats is None:
-            p_val = 2 * (1 - 0.5 * (1 + np.erf(abs(z_stat) / np.sqrt(2))))
+            # scipy not installed -- fall back to the standard library's
+            # math.erf (numpy itself has never had a top-level np.erf;
+            # calling it always raised AttributeError regardless of numpy
+            # version, this fallback path was simply never exercised
+            # until scipy was missing).
+            p_val = 2 * (1 - 0.5 * (1 + math.erf(abs(z_stat) / math.sqrt(2))))
         else:
             p_val = 2 * (1 - stats.norm.cdf(abs(z_stat)))  # Two-sided
         
@@ -166,12 +172,24 @@ def apply_bh_correction(
     
     p_valid = p_values[valid_mask]
     if multipletests is None:
+        # statsmodels not installed -- fall back to a manual BH
+        # implementation. BUG FIX: this previously computed
+        # `p_sorted[m-1-i] * (m-i)/(m-i)`, which is always `* 1`
+        # (numerator and denominator are identical) -- i.e. it silently
+        # returned the RAW p-values unadjusted for multiple testing
+        # whenever statsmodels was missing, letting more false positives
+        # through as "significant" than the FDR correction is supposed to
+        # allow. Correct BH: for the k-th smallest p-value out of m (rank
+        # j = k+1, 1-indexed), adjusted p-value = p_(j) * m / j, then
+        # enforce monotonicity via the cumulative-min pass below
+        # (unchanged, that part was already correct).
         order = np.argsort(p_valid)
         p_sorted = p_valid[order]
         m = len(p_sorted)
         p_adj_sorted = np.empty_like(p_sorted)
         for i in range(m):
-            p_adj_sorted[m - 1 - i] = min(1.0, p_sorted[m - 1 - i] * (m - i) / (m - i))
+            rank = m - i  # 1-indexed rank of p_sorted[m-1-i]
+            p_adj_sorted[m - 1 - i] = min(1.0, p_sorted[m - 1 - i] * m / rank)
         p_adj_sorted = np.minimum.accumulate(p_adj_sorted[::-1])[::-1]
         p_adj_valid = np.empty_like(p_valid)
         p_adj_valid[order] = p_adj_sorted

@@ -61,6 +61,7 @@ class CostModel:
         df: pd.DataFrame,
         forward_engine,
         optimal_horizon: int,
+        direction: str = "long",
     ) -> Dict:
         """
         Compute expectancy with costs applied.
@@ -75,6 +76,22 @@ class CostModel:
             ForwardProfileEngine instance.
         optimal_horizon : int
             Exit horizon (bars).
+        direction : str
+            "long" or "short". BUG FIX: this parameter was missing entirely
+            before -- this function always computed gross P&L as if going
+            long (exit_price - entry_price), regardless of whether the
+            condition's actual edge was bullish or bearish. For a genuinely
+            bearish condition (forward bull probability significantly
+            BELOW baseline -- the correct trade is to sell), that produced
+            the exact mirror-image (negated) of the true P&L, making a real
+            short edge look like a catastrophic loss. Since Phase 6b uses
+            this function to drop conditions before they ever reach Phase
+            7c (where direction is inferred correctly), this could -- and
+            did -- silently reject every bearish edge in a run, sometimes
+            leaving 0 survivors even when genuine edges existed. Pass
+            infer_direction(cond_prob_bull_at_optimal_horizon,
+            baseline_prob_at_optimal_horizon) here, the same call Phase 7c
+            already makes, rather than assuming "long".
 
         Returns
         -------
@@ -160,6 +177,11 @@ class CostModel:
         entry_price = open_arr[entry_idx]
         exit_price = close_arr[exit_idx]
         gross_pnl_pips = (exit_price - entry_price) / self.pip_value
+        if direction == "short":
+            # A short profits when price falls -- mirror the long P&L
+            # rather than recomputing entry/exit, since the cost (spread +
+            # slippage) is symmetric and unaffected by direction.
+            gross_pnl_pips = -gross_pnl_pips
 
         if self.spread_atr_mult is not None:
             entry_atr_arr = atr[src_idx]

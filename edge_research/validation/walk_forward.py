@@ -104,6 +104,7 @@ def validate_condition_walk_forward(
     condition_prob: np.ndarray,
     forward_engine,
     validator: WalkForwardValidator,
+    direction: str = "long",
 ) -> dict:
     """
     Validate a condition's edge across walk-forward windows.
@@ -120,6 +121,23 @@ def validate_condition_walk_forward(
         ForwardProfileEngine instance.
     validator : WalkForwardValidator
         Walk-forward validator.
+    direction : str
+        "long" or "short". BUG FIX: this parameter was missing entirely --
+        the consistency check below used to hardcode
+        `np.all(window_probs > 0.5)`, i.e. it only ever recognized a
+        condition as "direction consistent" if every window's forward bull
+        probability was ABOVE 0.5, regardless of whether the condition's
+        actual edge was bullish or bearish. For a genuinely bearish/short
+        condition (correctly and consistently showing prob_bull BELOW 0.5
+        in every single window -- exactly what "consistent" should mean
+        for a short), this hardcoded check reported
+        edge_direction_consistent=False every time, since prob_bull > 0.5
+        was never true for a real short edge. This is the same class of
+        long-only assumption bug fixed in CostModel.apply_costs_to_forward_profile
+        -- pass infer_direction(...) here too, the same value used there and
+        in Phase 7c, so a genuinely consistent short edge isn't rejected by
+        the walk-forward gate purely because it never happened to look
+        bullish.
 
     Returns
     -------
@@ -167,9 +185,16 @@ def validate_condition_walk_forward(
         }
     
     window_probs = np.array(window_probs)
-    
-    # Check consistency: all window prob_bull > 0.5?
-    direction_consistent = np.all(np.nanmean(window_probs, axis=0) > 0.5)
+
+    # Check consistency: every window's forward bull probability must sit
+    # on the SAME side of 0.5 that this condition's own inferred direction
+    # predicts -- above 0.5 for "long", below 0.5 for "short". (Previously
+    # hardcoded to "> 0.5" regardless of direction -- see docstring.)
+    mean_probs_per_horizon = np.nanmean(window_probs, axis=0)
+    if direction == "short":
+        direction_consistent = np.all(mean_probs_per_horizon < 0.5)
+    else:
+        direction_consistent = np.all(mean_probs_per_horizon > 0.5)
     
     # Check magnitude stability: std of prob_bull across windows
     magnitude_std = np.nanstd(window_probs)

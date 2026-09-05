@@ -1,3 +1,11 @@
+# NOTE: this file is XAUUSD-only (see cost model section below). For a
+# symbol-explicit path that can't be mixed up, use config/XAUUSD/M30/
+# instead of config/M30/ -- they're identical in content, but the
+# symbol-scoped path prevents accidentally applying gold's cost model to
+# another symbol (this exact mistake broke EURUSD Phase 6b results when
+# --config-dir config was used with --symbol EURUSD). For EURUSD, use
+# config/EURUSD/M30/.
+#
 # Pipeline Configuration for edge_research -- M30 profile
 #
 # ASSUMPTION THIS FILE IS BUILT ON: dataset size of roughly 125,000

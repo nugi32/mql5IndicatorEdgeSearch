@@ -72,17 +72,19 @@ python scripts/run_pipeline.py \
   --config-dir config \
   --output-dir output
 
-  python scripts/run_pipeline.py \
-  data/raw_csv/XAUUSD_M1_export_20100101.csv \
-  --symbol XAUUSD \
-  --timeframe M1 \
-  --config-dir config \
+
+python scripts/run_pipeline.py \
+  data/raw_csv/EURUSD_H1_export_20100101.csv \
+  --symbol EURUSD \
+  --timeframe H1 \
+  --config-dir config/EURUSD/H1 \
   --output-dir output
 
-    python scripts/run_pipeline.py \
-  data/raw_csv/halfy/XAUUSD_M15.csv \
+
+  python scripts/run_pipeline.py \
+  data/raw_csv/XAUUSD_M30_export_20100101.csv \
   --symbol XAUUSD \
-  --timeframe M15 \
+  --timeframe M30 \
   --config-dir config \
   --output-dir output
 

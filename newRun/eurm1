@@ -1,0 +1,97 @@
+(.venv) nugimini@nugimini:~/Documents/mql5IndicatorEdgeSearch$ 
+  python scripts/run_pipeline.py \
+  data/raw_csv/EURUSD_M1_export_20100101.csv \
+  --symbol EURUSD \
+  --timeframe M1 \
+  --config-dir config \
+  --output-dir output
+2026-09-03 16:27:07,831 [INFO] __main__: ================================================================================
+2026-09-03 16:27:07,831 [INFO] __main__: EDGE RESEARCH PIPELINE START
+2026-09-03 16:27:07,831 [INFO] __main__: ================================================================================
+2026-09-03 16:27:07,831 [INFO] __main__: 
+[PHASE 1] Ingestion & Storage...
+2026-09-03 16:27:07,831 [INFO] edge_research.ingestion.loader: Loading CSV from data/raw_csv/EURUSD_M1_export_20100101.csv
+
+2026-09-03 16:28:38,976 [WARNING] edge_research.ingestion.loader: Could not parse time with standard formats, using pandas auto-detect
+2026-09-03 16:28:40,133 [INFO] edge_research.ingestion.loader: Loaded 5934090 rows, date range: 2009-12-31 18:59:00 to 2025-12-31 23:58:00
+2026-09-03 16:28:41,184 [WARNING] edge_research.ingestion.loader: Found NaN values:
+frama_14                 384976
+envelope_20_01_lower    5934090
+dtype: int64
+2026-09-03 16:28:41,184 [INFO] edge_research.ingestion.loader: Converted 88 numeric columns to float32
+2026-09-03 16:28:41,185 [INFO] edge_research.ingestion.loader: Writing Parquet to output/storage/EURUSD_M1.parquet (compression=zstd)
+2026-09-03 16:29:07,023 [INFO] edge_research.ingestion.loader: Successfully wrote 5934090 rows to output/storage/EURUSD_M1.parquet
+2026-09-03 16:29:07,023 [INFO] __main__: ✓ Ingestion complete: 5934090 bars loaded
+2026-09-03 16:29:07,023 [INFO] __main__: 
+[PHASE 2] Known-At Tagging...
+2026-09-03 16:29:07,023 [INFO] edge_research.known_at.tagging: Loading known-at config from config/known_at_delay.yaml
+2026-09-03 16:29:07,034 [INFO] edge_research.known_at.tagging: Loaded 39 known-at rules
+2026-09-03 16:29:07,034 [INFO] __main__: ✓ Known-at tagger initialized
+2026-09-03 16:29:07,034 [INFO] __main__: 
+[PHASE 3] Condition Generation...
+2026-09-03 16:29:07,036 [INFO] __main__:   Generated 128 atomic conditions
+2026-09-03 16:29:08,116 [INFO] __main__:   128 / 128 atomic conditions passed frequency filter
+2026-09-03 16:29:10,441 [INFO] __main__:   Selected top 15 atomic conditions for combination (stratified across 5 families: ['cci', 'ma', 'mom', 'rsi', 'stoch'], ~3 per family)
+2026-09-03 16:29:17,323 [INFO] __main__:   2-atom combos: 82 generated (from 15 pooled atomic conditions)
+2026-09-03 16:30:23,133 [INFO] __main__:   3-atom combos: 202 generated (from 15 pooled atomic conditions)
+2026-09-03 16:34:52,507 [INFO] __main__:   4-atom combos: 213 generated (from 15 pooled atomic conditions)
+2026-09-03 16:45:28,082 [INFO] __main__:   5-atom combos: 63 generated (from 15 pooled atomic conditions)
+2026-09-03 16:45:28,082 [INFO] __main__:   Generated 560 combined conditions total
+2026-09-03 16:45:28,082 [INFO] __main__: ✓ Total candidates: 688 (128 atomic + 560 combined)
+2026-09-03 16:45:28,082 [INFO] __main__: 
+[PHASE 4] Frequency Pre-Filter...
+2026-09-03 16:45:37,259 [INFO] __main__: ✓ Frequency filter: 372 / 688 passed
+2026-09-03 16:45:37,259 [INFO] __main__: 
+[PHASE 5-6] Forward Profile & Significance Testing...
+2026-09-03 16:45:37,259 [INFO] edge_research.forward_profile.engine: Precomputing forward matrix (horizon=20)...
+2026-09-03 16:45:39,663 [INFO] edge_research.forward_profile.engine: Forward matrix computed: shape (5934090, 20)
+2026-09-03 16:45:39,664 [INFO] edge_research.forward_profile.engine: Computing baseline forward profile...
+2026-09-03 16:45:40,235 [INFO] edge_research.forward_profile.engine: Baseline profile computed: [0.46583086 0.47898912 0.48425955 0.48740274 0.48920706 0.49071446
+ 0.49185836 0.49270803 0.4932345  0.49377427 0.4942857  0.49464616
+ 0.49491698 0.495132   0.49543265 0.49557638 0.49592134 0.49608177
+ 0.49607587 0.49639288]
+2026-09-03 16:46:27,362 [INFO] edge_research.forward_profile.significance: Testing 372 conditions with FDR correction...
+2026-09-03 16:46:29,835 [INFO] edge_research.forward_profile.significance: Testing complete: 360 conditions passed significance
+2026-09-03 16:46:29,836 [INFO] __main__: ✓ Significance testing: 360 conditions passed
+2026-09-03 16:46:29,836 [INFO] __main__: 
+[PHASE 6b] Cost-Aware Pre-Filter...
+2026-09-03 16:46:45,218 [INFO] __main__: ✓ Cost-aware pre-filter: 0 / 360 conditions passed (min_expectancy_r=0.0), 360 dropped before entering the expensive Phase 7 robustness stack
+2026-09-03 16:46:45,218 [INFO] __main__:   Cost-adjusted expectancy_r distribution across all 360 significant conditions: min=-1.3826, median=-1.1178, mean=-1.1245, max=-1.0018
+2026-09-03 16:46:45,218 [WARNING] __main__: ⚠ Phase 6b dropped EVERY significant condition. This can be a genuine result (this timeframe's raw edges don't clear realistic transaction costs at all -- see the expectancy_r distribution above: if the max is also <= 0, that's the case here), or a config/cost mismatch (e.g. spread_pips/pip_value/spread_atr_mult not set correctly for this symbol -- see PROJECT_DIRECTION.md section 10). Check the distribution logged above before concluding the timeframe itself is unviable. To inspect Phase 5-6 candidates without the cost filter, rerun with precheck_enabled: false in pipeline_config.yaml.
+2026-09-03 16:46:45,218 [INFO] __main__: 
+[PHASE 7] Robustness Validation...
+2026-09-03 16:46:45,218 [INFO] edge_research.validation.walk_forward: Generated 158 walk-forward windows
+2026-09-03 16:46:45,319 [INFO] edge_research.validation.regime_stress_test: Regime classification: trending=3640863, high_vol=1475243
+2026-09-03 16:46:45,319 [INFO] __main__: ✓ Robustness validation: 0 edges validated
+2026-09-03 16:46:45,319 [INFO] __main__: 
+[PHASE 7b] Holdout Set Testing...
+2026-09-03 16:46:45,319 [INFO] __main__: 
+[PHASE 7c] Realistic Trade Simulation...
+2026-09-03 16:46:45,320 [INFO] __main__: ✓ Trade simulation complete: 0 / 0 edges have positive simulated expectancy_r
+2026-09-03 16:46:45,320 [INFO] __main__: 
+[PHASE 7d] Rotation-Based Permutation Test...
+2026-09-03 16:46:45,320 [INFO] __main__: ✓ Permutation testing complete: 0 / 0 edges pass the rotation permutation test
+2026-09-03 16:46:45,320 [INFO] __main__: 
+[PHASE 7e] Final Strategy Selection Gate...
+2026-09-03 16:46:45,320 [INFO] __main__: ✓ Strategy gate: 0 / 0 edges passed ALL criteria and are recommended for EA generation
+2026-09-03 16:46:45,322 [INFO] __main__: ✓ Gate results written to output/STRATEGY_GATE_RESULTS.csv
+2026-09-03 16:46:45,322 [INFO] __main__: 
+[PHASE 8] Report Generation...
+2026-09-03 16:46:45,322 [INFO] __main__: ✓ Generated 0 edge reports (all candidates, gate status included)
+2026-09-03 16:46:45,324 [INFO] edge_research.reporting.report_generator: Markdown report saved to output/EDGES_SUMMARY.md
+2026-09-03 16:46:45,324 [INFO] __main__: ✓ Summary Markdown: output/EDGES_SUMMARY.md
+2026-09-03 16:46:45,324 [INFO] __main__: 
+[PHASE 9] MQL5 Code Generation (gate-passing edges only)...
+2026-09-03 16:46:45,324 [INFO] __main__: ✓ Generated 0 .mq5 EA files (0 candidates did not pass the strategy gate and were skipped; see STRATEGY_GATE_RESULTS.csv for reasons)
+2026-09-03 16:46:45,324 [INFO] __main__: 
+================================================================================
+2026-09-03 16:46:45,324 [INFO] __main__: EDGE RESEARCH PIPELINE COMPLETE
+2026-09-03 16:46:45,324 [INFO] __main__: ================================================================================
+2026-09-03 16:46:45,324 [INFO] __main__: Total edges discovered: 0
+2026-09-03 16:46:45,324 [INFO] __main__: Output directory: /home/nugimini/Documents/mql5IndicatorEdgeSearch/output
+2026-09-03 16:46:45,324 [INFO] __main__:   - Reports: output/reports
+2026-09-03 16:46:45,324 [INFO] __main__:   - EAs: output/generated_ea
+2026-09-03 16:46:45,324 [INFO] __main__:   - Summary: output/EDGES_SUMMARY.md
+2026-09-03 16:46:45,324 [INFO] __main__: ================================================================================
+(.venv) nugimini@nugimini:~/Documents/mql5IndicatorEdgeSearch$ 
+(.venv) nugimini@nugimini:~/Documents/mql5IndicatorEdgeSearch$ this is ent of m1 run

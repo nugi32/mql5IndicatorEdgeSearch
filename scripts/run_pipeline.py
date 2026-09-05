@@ -347,6 +347,28 @@ def run_pipeline(
 
     logger.info(f"✓ Significance testing: {len(sig_conditions)} conditions passed")
 
+    # Determine each condition's trade direction (long/short) NOW, right
+    # after significance testing -- not later in Phase 7c as before. BUG
+    # FIX: Phase 6b's cost-aware pre-filter (and the Phase 7 loop's cost
+    # model call) used to call apply_costs_to_forward_profile() without a
+    # direction at all, which silently assumed every condition was a LONG
+    # trade. Any condition whose true edge was bearish (forward bull
+    # probability significantly BELOW baseline, i.e. correct trade is
+    # SHORT) had its P&L computed backwards -- mirrored/negated -- making
+    # a real short edge look catastrophically unprofitable. Since Phase 6b
+    # drops conditions before they ever reach Phase 7c (where direction
+    # used to be inferred), this could reject every bearish edge in a run
+    # for a reason that had nothing to do with cost realism. This is
+    # exactly what happened on an EURUSD H4 run: 0/335 passed Phase 6b
+    # with an expectancy_r distribution that didn't move at all when the
+    # cost config was corrected from XAUUSD to EURUSD values -- the
+    # dominant effect was the sign bug, not the cost magnitude.
+    for cond_res in sig_conditions:
+        sig_df = cond_res['significance_results']
+        cond_prob_bull_at_h = float(sig_df.iloc[0]['prob_bull'])
+        baseline_prob_at_h = float(baseline_prob[cond_res['optimal_horizon'] - 1])
+        cond_res['direction'] = infer_direction(cond_prob_bull_at_h, baseline_prob_at_h)
+
     # Cost model is needed for both the Phase 6b pre-filter below and the
     # Phase 7 robustness loop's per-edge cost estimate, so it's built once
     # here. spread_atr_mult (optional) makes the cost estimate scale with
@@ -385,7 +407,8 @@ def run_pipeline(
         all_expectancy_r = []
         for cond_res in sig_conditions:
             cost_result = cost_model.apply_costs_to_forward_profile(
-                cond_res['mask'], df, engine, cond_res['optimal_horizon']
+                cond_res['mask'], df, engine, cond_res['optimal_horizon'],
+                direction=cond_res['direction'],
             )
             cond_res['precheck_cost_result'] = cost_result
             if np.isfinite(cost_result.get('expectancy_r', np.nan)):
@@ -507,7 +530,8 @@ def run_pipeline(
 
         # Walk-forward
         wf_result = validate_condition_walk_forward(
-            df, mask, cond_res['prob_bull'], engine, wf_validator
+            df, mask, cond_res['prob_bull'], engine, wf_validator,
+            direction=cond_res['direction'],
         )
 
         # Regime stress
@@ -548,7 +572,7 @@ def run_pipeline(
         cost_result = cond_res.get('precheck_cost_result')
         if cost_result is None:
             cost_result = cost_model.apply_costs_to_forward_profile(
-                mask, df, engine, optimal_h
+                mask, df, engine, optimal_h, direction=cond_res['direction']
             )
 
         robustness_info = {
@@ -574,6 +598,7 @@ def run_pipeline(
             'baseline_prob': float(baseline_prob[optimal_h - 1]) if optimal_h > 0 else 0.5,
             'robustness': robustness_info,
             'mask': mask,
+            'direction': cond_res['direction'],
         })
 
     logger.info(f"✓ Robustness validation: {len(validated_edges)} edges validated")
@@ -630,8 +655,12 @@ def run_pipeline(
 
     for edge in validated_edges:
         optimal_h = int(edge['sig_results'].iloc[0]['horizon'])
-        cond_prob_bull_at_h = float(edge['sig_results'].iloc[0]['prob_bull'])
-        direction = infer_direction(cond_prob_bull_at_h, edge['baseline_prob'])
+        # Reuse the direction already determined right after Phase 5-6
+        # (before Phase 6b) rather than recomputing it here -- same inputs,
+        # same infer_direction() call, kept as a single source of truth so
+        # Phase 6b's filtering decision and Phase 7c's simulation direction
+        # can never silently diverge.
+        direction = edge['direction']
 
         sim_config = TradeSimConfig(
             direction=direction,

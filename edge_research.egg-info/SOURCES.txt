@@ -17,6 +17,7 @@ edge_research/reporting/edge_report_schema.py
 edge_research/reporting/report_generator.py
 edge_research/validation/cost_model.py
 edge_research/validation/parameter_sensitivity.py
+edge_research/validation/permutation_test.py
 edge_research/validation/regime_stress_test.py
 edge_research/validation/walk_forward.py
 tests/test_conditions.py
