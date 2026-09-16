@@ -1,0 +1,171 @@
+# Pipeline Configuration for edge_research (EURUSD) -- H4 profile (SHORT-HISTORY variant)
+#
+# CALIBRATED FOR: ~3 months of continuous H4 data (~378 bars),
+# the shortest length mentioned when this profile was requested. This is
+# deliberately sized for the SHORTEST expected run, not the longest:
+# edge_research.validation.walk_forward.WalkForwardValidator generates
+# MORE windows automatically if you feed it more bars than this assumes,
+# so this profile stays valid (just a bit under-tuned, never broken) for
+# anything from ~3 months up to ~1 year of H4 data. If your actual file
+# is drastically longer than 1 year, use the long-history profile in
+# config/EURUSD/H4/pipeline_config.yaml instead -- that one is calibrated
+# for the full multi-year export and will use short-history windows too
+# inefficiently (many tiny, low-power walk-forward windows).
+#
+# ACTION REQUIRED BEFORE TRUSTING RESULTS FROM THIS PROFILE:
+# After Phase 1 runs, check the log line "Ingestion complete: N bars
+# loaded". If N is drastically different from ~378, rescale
+# wf_train_bars/wf_test_bars/wf_step_bars using the same ratio:
+#   wf_train_bars ~= 0.35 * N, wf_test_bars ~= 0.07 * N, wf_step_bars ~= 0.035 * N
+#
+# NOTE (H4, 3 months): this timeframe produces very few, very small
+# walk-forward windows at this data length (378 bars total) --
+# statistically weak by construction, not a bug. Treat robust_walk_forward
+# results from this profile as a rough signal, not strong evidence, until
+# you run with more history.
+
+# Forward-looking horizon parameters
+max_horizon: 50                    # Maximum bars to look ahead (1 to 50)
+min_horizon: 1                     # Minimum bars (always 1)
+
+# Frequency filtering
+# min_occurrence here is min_freq_per_year * 0.25 year (3 months), floored
+# at 5 -- fewer than ~5 occurrences is too little for this pipeline's
+# statistics (std, CI, walk-forward windows) to mean much of anything.
+# min_freq_per_year itself is UNCHANGED from the long-history profile since
+# it's already a rate (per year), not an absolute count -- it doesn't need
+# rescaling for a shorter dataset.
+min_occurrence: 5
+min_freq_per_year: 10.0
+
+# Statistical significance
+alpha: 0.05                        # Significance level for hypothesis tests
+fdr_method: "fdr_bh"               # Benjamini-Hochberg FDR correction
+
+# Walk-forward validation -- sized for ~378 bars (~3 months of continuous H4).
+# See the ACTION REQUIRED note above if your actual bar count is different.
+wf_train_bars: 130
+wf_test_bars: 25
+wf_step_bars: 13
+
+# Regime classification
+atr_percentile_low: 25             # ATR < 25th percentile = low vol
+atr_percentile_high: 75            # ATR > 75th percentile = high vol
+
+adx_trending_threshold: 25         # ADX > 25 = trending regime
+adx_ranging_threshold: 20          # ADX < 20 = ranging regime
+
+# Parameter sensitivity
+param_shift_pct: 15                # +/-15% parameter shift for sensitivity test
+
+# Cost model (entry and exit) -- set for EURUSD (major forex pair, 5-digit
+# quoting), NOT the XAUUSD values used in config/xauusd/. User-confirmed
+# real broker spread: 1.16053 - 1.16052 = 0.00001 price units (1 point =
+# 0.1 pip in 5-digit quoting). spread_pips * pip_value = 0.1 * 0.0001 =
+# 0.00001 price units, matching that observed spread. This is
+# symbol-dependent, not timeframe-dependent, so it does NOT need to change
+# across the M1/M5/M15/M30/H1/H4/D1 profiles in this folder -- only change
+# it if you switch symbols again or your broker's spread differs.
+spread_pips: 0.1                   # Spread in pips (0.1 pip = 1 point, per confirmed 1.16053/1.16052 quote)
+slippage_pips: 1.0                 # Slippage in pips (on entry and exit) -- NOTE: at this tight a
+                                    # spread, 1.0 pip of slippage is now 10x the spread itself and
+                                    # will dominate total cost. Worth revisiting if your broker's
+                                    # actual execution slippage on EURUSD is smaller than 1 full pip.
+pip_value: 0.0001                  # Pip value for EURUSD / 5-digit forex majors
+
+# Holdout set
+holdout_pct: 0.15                  # Reserve 15% of data as final untouched test set
+
+# Trade simulation (Phase 7c)
+sim_atr_column: "atr_14"
+
+# Holding-period selection (Phase 7c, extended) -- replaces the old
+# SL/TP/trailing-stop exit scheme entirely. simulate_condition() now has
+# exactly one exit mechanism: close unconditionally holding_bars bars after
+# entry. holding_bars itself is NOT set here -- it is selected per-condition
+# by scan_holding_horizons()/select_best_holding_bars() (the horizon with the
+# best consistency score, mean_r / (std_r / sqrt(n)), not the biggest raw
+# mean_r) within the range below.
+horizon_scan_min_bars: 1              # smallest holding period (bars) scanned per condition
+horizon_scan_max_bars: 50             # largest holding period (bars) scanned per condition -- defaults to max_horizon
+
+# How many walk-forward windows the selected holding_bars must show a
+# positive mean R-multiple in (out-of-sample) to be accepted as
+# 'holding_bars_stable' -- see strategy_gate.py gate 8. Raise this for a
+# stricter, more conservative selection; 1 is the permissive floor.
+horizon_min_stable_windows: 1
+
+# Rotation permutation test (Phase 7d)
+permutation_n: 500
+# permutation_random_state: 42     # uncomment for reproducible runs
+
+# Final strategy selection gate (Phase 7e)
+gate_min_sim_trades: 5    # capped at min_occurrence (5) -- can never physically exceed how many times a condition is even allowed to trigger (Phase 4) at this data length; 30 (the long-history default) would make the Phase 7e gate mathematically unpassable here
+gate_min_profit_factor: 1.1
+gate_require_walk_forward: true
+gate_require_permutation: true
+
+
+# --- Cost realism & validation hardening (added this revision) ---------
+# See PROJECT_DIRECTION.md section 8 ("Suggested next steps / future
+# work") and the "kenapa lolos di Python tapi gagal di MQL5" discussion.
+# All of these are OPT-IN and default to behavior identical to before this
+# revision if left commented out / omitted.
+
+# Phase 6b: cost-aware pre-filter. Drops significant conditions whose
+# cost-adjusted expectancy_r (using the same simple horizon-based cost
+# model as Phase 5-6, no SL/TP) doesn't clear this margin, BEFORE they pay
+# for the expensive Phase 7 robustness stack. 0.0 = "must not already be
+# underwater on the cheap estimate". Set precheck_enabled: false to
+# disable this phase entirely.
+precheck_enabled: true
+min_precheck_expectancy_r: 0.0
+
+# Variable/volatility-aware spread (Phase 5-6 cost model AND Phase 7c trade
+# simulation). When set, spread for each triggered bar/trade is computed
+# as `spread_atr_mult * atr_at_entry` (price units) instead of the fixed
+# spread_pips/spread_price_units above -- this makes cost scale with the
+# market's own realized volatility at entry time rather than assuming a
+# constant spread across the whole dataset. Leave commented out to keep
+# the fixed-spread behavior.
+# spread_atr_mult: 0.03
+
+# Optional session-based spread multiplier on top of the fixed or
+# ATR-scaled spread above. List of [start_hour, end_hour, multiplier]
+# triples in broker/server time (same timezone the data was exported in --
+# no conversion is done). A range may wrap past midnight, e.g. [22, 6, x]
+# covers 22:00-23:59 and 00:00-05:59. Example below widens spread during
+# the low-liquidity Asia session and tightens it during the London/NY
+# overlap -- tune to your broker's actual observed spread behavior before
+# relying on it.
+# session_spread_multipliers:
+#   - [0, 7, 1.5]     # Asia session -- wider spread
+#   - [7, 16, 1.0]    # London session -- baseline
+#   - [13, 16, 0.9]   # London/NY overlap -- tightest
+#   - [16, 24, 1.1]   # NY session tail -- slightly wider
+
+# Bootstrap confidence interval on Phase 7c's expectancy_r. Off by default
+# (sim_bootstrap_n: 0) since it adds compute cost per condition. When
+# enabled, gate_require_positive_ci_lower can require the CI LOWER bound
+# (not just the point estimate) to be positive in Phase 7e -- stricter
+# than the existing sim_expectancy_positive gate, since it accounts for
+# trade-to-trade variance and small sample sizes.
+sim_bootstrap_n: 0
+sim_bootstrap_ci: 0.95
+# sim_bootstrap_random_state: 42   # uncomment for reproducible CIs
+gate_require_positive_ci_lower: false
+
+# Condition generation
+rsi_thresholds: [20, 25, 30, 35, 70, 75, 80]
+cci_thresholds: [-100, -50, 50, 100]
+mom_thresholds: [-5, 0, 5]
+stoch_thresholds: [20, 30, 70, 80]
+
+# Output
+output_dir: "./output"
+parquet_compression: "zstd"        # zstd or snappy
+
+top_n_atomic_for_combine: 15
+max_corr_combine: 0.85
+max_atoms_per_combo: 5
+include_ma_conditions: true        # enables the 5th family (MA) so 5-way combos are possible
