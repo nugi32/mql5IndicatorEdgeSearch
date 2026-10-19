@@ -224,10 +224,10 @@ Usage (identical either way -- the config-dir determines the mode):
 
 ```bash
 python scripts/run_walkforward_pipeline.py \
-  data/raw_csv/XAUUSD_M30_export_20100101.csv \
+  data/raw_csv/XAUUSD_M5_export_20100101.csv \
   --symbol XAUUSD \
-  --timeframe M30 \
-  --config-dir config/WALKFORWARD/XAUUSD/M30 \
+  --timeframe M5 \
+  --config-dir config/WALKFORWARD/XAUUSD/M5 \
   --output-dir output_walkforward
 
 python scripts/run_walkforward_pipeline.py \
