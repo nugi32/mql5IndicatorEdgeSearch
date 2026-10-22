@@ -177,6 +177,46 @@ meta_wf_runs:
     train_years: 3
     test_years: 1
     step_years: 1
+  - start_year: 2012
+    train_years: 3
+    test_years: 1
+    step_years: 1
+  - start_year: 2013
+    train_years: 3
+    test_years: 1
+    step_years: 1
+  - start_year: 2014
+    train_years: 3
+    test_years: 1
+    step_years: 1
+  - start_year: 2015
+    train_years: 3
+    test_years: 1
+    step_years: 1
+  - start_year: 2016
+    train_years: 3
+    test_years: 1
+    step_years: 1
+  - start_year: 2017
+    train_years: 3
+    test_years: 1
+    step_years: 1
+  - start_year: 2018
+    train_years: 3
+    test_years: 1
+    step_years: 1
+  - start_year: 2019
+    train_years: 3
+    test_years: 1
+    step_years: 1
+  - start_year: 2020
+    train_years: 3
+    test_years: 1
+    step_years: 1
+  - start_year: 2021
+    train_years: 3
+    test_years: 1
+    step_years: 1
 
 meta_wf_plateau_min_sensitivity: 0.7
 meta_wf_top_k_per_window: 20
