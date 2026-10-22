@@ -1,0 +1,22 @@
+Metadata-Version: 2.4
+Name: edge-research
+Version: 0.1.0
+Summary: Systematic market-edge discovery pipeline from MQL5-exported indicator data
+Author-email: Edge Research <dev@edge-research.local>
+License-Expression: MIT
+Requires-Python: >=3.9
+Requires-Dist: numpy<3.0.0,>=1.26.0
+Requires-Dist: pandas<4.0.0,>=2.2.0
+Requires-Dist: pyyaml<7.0.0,>=6.0.3
+Requires-Dist: jinja2<4.0.0,>=3.1.2
+Requires-Dist: pydantic<3.0.0,>=2.8.0
+Requires-Dist: pydantic-settings<3.0.0,>=2.4.0
+Provides-Extra: analysis
+Requires-Dist: scipy>=1.11.0; extra == "analysis"
+Requires-Dist: statsmodels>=0.14.0; extra == "analysis"
+Provides-Extra: dev
+Requires-Dist: pytest==7.4.3; extra == "dev"
+Requires-Dist: pytest-cov==4.1.0; extra == "dev"
+Requires-Dist: black==23.12.1; extra == "dev"
+Requires-Dist: ruff==0.1.11; extra == "dev"
+Requires-Dist: mypy==1.7.1; extra == "dev"

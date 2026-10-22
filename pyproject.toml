@@ -1,0 +1,57 @@
+[build-system]
+requires = ["setuptools>=77.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "edge-research"
+version = "0.1.0"
+description = "Systematic market-edge discovery pipeline from MQL5-exported indicator data"
+requires-python = ">=3.9"
+authors = [{name = "Edge Research", email = "dev@edge-research.local"}]
+license = "MIT"
+
+dependencies = [
+    "numpy>=1.26.0,<3.0.0",
+    "pandas>=2.2.0,<4.0.0",
+    "pyyaml>=6.0.3,<7.0.0",
+    "jinja2>=3.1.2,<4.0.0",
+    "pydantic>=2.8.0,<3.0.0",
+    "pydantic-settings>=2.4.0,<3.0.0",
+]
+
+[project.optional-dependencies]
+analysis = [
+    "scipy>=1.11.0",
+    "statsmodels>=0.14.0",
+]
+dev = [
+    "pytest==7.4.3",
+    "pytest-cov==4.1.0",
+    "black==23.12.1",
+    "ruff==0.1.11",
+    "mypy==1.7.1",
+]
+
+[tool.setuptools]
+packages = ["edge_research", "edge_research.conditions", "edge_research.forward_profile", "edge_research.ingestion", "edge_research.known_at", "edge_research.mql5_codegen", "edge_research.reporting", "edge_research.validation"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+addopts = "-v --tb=short"
+pythonpath = ["."]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
+
+[tool.black]
+line-length = 100
+target-version = ["py39"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
