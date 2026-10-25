@@ -1,0 +1,6 @@
+*.csv
+*.parquet
+/output/
+*.git
+*.venv
+/output_walkforward/

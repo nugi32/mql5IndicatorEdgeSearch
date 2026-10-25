@@ -1,0 +1,243 @@
+# Pipeline Configuration for edge_research (AUDUSD) -- M5 profile (WALK-FORWARD variant)
+#
+# CALIBRATED FOR: a ~3-year-train / 1-year-test walk-forward window
+# (~217,728 bars train reference). wf_train_bars/wf_test_bars/wf_step_bars,
+# min_occurrence, and gate_min_sim_trades below are all sized to fit inside
+# ONE meta_wf_train_bars-sized (3-year) slice -- do NOT reuse config/AUDUSD/M5/'s
+# inner settings here, they assume the entire multi-year file is the
+# training set and would make every inner walk-forward window fail to form
+# (see README.md's "Walk-forward mode" section / the guard in
+# scripts/run_walkforward_pipeline.py that checks for exactly this).
+
+# Forward-looking horizon parameters
+max_horizon: 100                    # Phase 5-6 significance-testing lookout range -- INDEPENDENT of the 12-hour hold cap below (that's horizon_scan_max_bars, a completely different, Phase 7c parameter). Do not tie these two together: max_horizon drives a per-condition Python loop (edge_research/forward_profile/engine.py, edge_research/validation/parameter_sensitivity.py) whose cost scales directly with this number -- setting it anywhere near the 12-hour-equivalent bar count (720 for M1) makes Phase 5-6 and Phase 7's parameter-sensitivity check computationally infeasible on multi-million-row files, which is exactly what happened here before this was fixed.
+min_horizon: 1
+
+# min_occurrence here is min_freq_per_year * 3 years (this profile's outer
+# train window length) -- NOT the same number as config/AUDUSD/M5/'s,
+# which assumes the entire multi-year file as the sample.
+min_occurrence: 90
+min_freq_per_year: 30.0
+
+# Statistical significance
+alpha: 0.05                        # Significance level for hypothesis tests
+fdr_method: "fdr_bh"               # Benjamini-Hochberg FDR correction
+
+# Walk-forward validation -- sized for ~217,728 bars (~3 years of continuous M5).
+wf_train_bars: 76200
+wf_test_bars: 15240
+wf_step_bars: 7620
+
+# Regime classification
+atr_percentile_low: 25             # ATR < 25th percentile = low vol
+atr_percentile_high: 75            # ATR > 75th percentile = high vol
+
+adx_trending_threshold: 25         # ADX > 25 = trending regime
+adx_ranging_threshold: 20          # ADX < 20 = ranging regime
+
+# Parameter sensitivity
+param_shift_pct: 15                # +/-15% parameter shift for sensitivity test
+
+# Cost model (entry and exit) -- AUDUSD, UNVERIFIED ESTIMATE.
+# spread_pips * pip_value = 0.4 * 0.0001 = 4e-05 price units round-trip cost basis.
+# typical ECN-tier estimate, NOT independently verified -- confirm against your own broker's real quotes before trusting Phase 7c's expectancy_r
+spread_pips: 0.4
+slippage_pips: 1.0
+pip_value: 0.0001
+
+# Holdout set
+holdout_pct: 0.15                  # Reserve 15% of data as final untouched test set
+
+# Trade simulation (Phase 7c)
+sim_atr_column: "atr_14"
+
+# Holding-period selection (Phase 7c, extended) -- replaces the old
+# SL/TP/trailing-stop exit scheme entirely. simulate_condition() now has
+# exactly one exit mechanism: close unconditionally holding_bars bars after
+# entry. holding_bars itself is NOT set here -- it is selected per-condition
+# by scan_holding_horizons()/select_best_holding_bars() (the horizon with the
+# best consistency score, mean_r / (std_r / sqrt(n)), not the biggest raw
+# mean_r) within the range below.
+#
+# CAPPED AT A 12-HOUR MAXIMUM HOLD, converted to M5 bars (144 bars =
+# 12 hours on M5).
+horizon_scan_min_bars: 1              # smallest holding period (bars) scanned per condition
+horizon_scan_max_bars: 144
+
+horizon_min_stable_windows: 1
+
+permutation_n: 500
+# permutation_random_state: 42
+
+gate_min_sim_trades: 30
+gate_min_profit_factor: 1.1
+gate_require_walk_forward: true
+gate_require_permutation: true
+
+
+# --- Cost realism & validation hardening ------------------------------
+# All of these are OPT-IN and default to behavior identical to before if
+# left commented out / omitted.
+
+# Phase 6b: cost-aware pre-filter. Drops significant conditions whose
+# cost-adjusted expectancy_r (using the same simple horizon-based cost
+# model as Phase 5-6, no SL/TP) doesn't clear this margin, BEFORE they pay
+# for the expensive Phase 7 robustness stack. 0.0 = "must not already be
+# underwater on the cheap estimate". Set precheck_enabled: false to
+# disable this phase entirely.
+precheck_enabled: true
+min_precheck_expectancy_r: 0.0
+
+# Variable/volatility-aware spread (Phase 5-6 cost model AND Phase 7c trade
+# simulation). When set, spread for each triggered bar/trade is computed
+# as `spread_atr_mult * atr_at_entry` (price units) instead of the fixed
+# spread_pips/spread_price_units above -- this makes cost scale with the
+# market's own realized volatility at entry time rather than assuming a
+# constant spread across the whole dataset. Leave commented out to keep
+# the fixed-spread behavior.
+# spread_atr_mult: 0.03
+
+# Optional session-based spread multiplier on top of the fixed or
+# ATR-scaled spread above. List of [start_hour, end_hour, multiplier]
+# triples in broker/server time (same timezone the data was exported in --
+# no conversion is done). A range may wrap past midnight, e.g. [22, 6, x]
+# covers 22:00-23:59 and 00:00-05:59. Example below widens spread during
+# the low-liquidity Asia session and tightens it during the London/NY
+# overlap -- tune to your broker's actual observed spread behavior before
+# relying on it.
+# session_spread_multipliers:
+#   - [0, 7, 1.5]     # Asia session -- wider spread
+#   - [7, 16, 1.0]    # London session -- baseline
+#   - [13, 16, 0.9]   # London/NY overlap -- tightest
+#   - [16, 24, 1.1]   # NY session tail -- slightly wider
+
+# Bootstrap confidence interval on Phase 7c's expectancy_r. Off by default
+# (sim_bootstrap_n: 0) since it adds compute cost per condition. When
+# enabled, gate_require_positive_ci_lower can require the CI LOWER bound
+# (not just the point estimate) to be positive in Phase 7e -- stricter
+# than the existing sim_expectancy_positive gate, since it accounts for
+# trade-to-trade variance and small sample sizes.
+sim_bootstrap_n: 0
+sim_bootstrap_ci: 0.95
+# sim_bootstrap_random_state: 42   # uncomment for reproducible CIs
+gate_require_positive_ci_lower: false
+
+# Condition generation
+rsi_thresholds: [20, 25, 30, 35, 70, 75, 80]
+cci_thresholds: [-100, -50, 50, 100]
+mom_thresholds: [-5, 0, 5]
+stoch_thresholds: [20, 30, 70, 80]
+
+# Output
+output_dir: "./output"
+parquet_compression: "zstd"        # zstd or snappy
+
+top_n_atomic_for_combine: 15
+max_corr_combine: 0.85
+max_atoms_per_combo: 5
+include_ma_conditions: true        # enables the 5th family (MA) so 5-way combos are possible
+
+# ---------------------------------------------------------------------------
+# Walk-forward META-PIPELINE settings (scripts/run_walkforward_pipeline.py)
+# ---------------------------------------------------------------------------
+# CALENDAR mode: windows are anchored to Jan 1 of start_year and sized in
+# whole calendar years -- e.g. the first entry below trains on exactly
+# 2010-01-01..2013-01-01, tests on 2013-01-01..2014-01-01, then rolls the
+# train START forward by step_years (1 year) and repeats, for as many
+# years as the data covers. Each entry in meta_wf_runs is a SEPARATE,
+# independent sequence of windows over the whole file -- the second entry
+# below (start_year: 2011) is not a continuation of the first, it's an
+# entirely separate walk-forward run offset by one year, so the two
+# sequences' train/test periods deliberately overlap. Add or remove
+# entries to run more/fewer of these; each one multiplies the total
+# runtime (every entry re-runs the full pipeline on every one of its
+# windows).
+#
+# This ENTIRE file (not just meta_wf_runs) is calibrated for a 3-year
+# train / 1-year test window: wf_train_bars/wf_test_bars/wf_step_bars,
+# min_occurrence, and gate_min_sim_trades above are all sized to fit
+# comfortably inside ONE 3-calendar-year train window (~17 inner windows)
+# -- NOT safe to reuse with the plain single-run profile's inner settings,
+# which assume the entire multi-year file is the training set. If you
+# change train_years away from 3, these need rescaling too -- see
+# config/SHORT_DATA/ and this tier's own generation methodology (same
+# 0.35/0.07/0.035 ratios, applied to whatever the new train window's
+# typical bar count would be).
+meta_wf_runs:
+  - start_year: 2010
+    train_years: 3
+    test_years: 1
+    step_years: 1
+  - start_year: 2011
+    train_years: 3
+    test_years: 1
+    step_years: 1
+  - start_year: 2012
+    train_years: 3
+    test_years: 1
+    step_years: 1
+  - start_year: 2013
+    train_years: 3
+    test_years: 1
+    step_years: 1
+  - start_year: 2014
+    train_years: 3
+    test_years: 1
+    step_years: 1
+  - start_year: 2015
+    train_years: 3
+    test_years: 1
+    step_years: 1
+  - start_year: 2016
+    train_years: 3
+    test_years: 1
+    step_years: 1
+  - start_year: 2017
+    train_years: 3
+    test_years: 1
+    step_years: 1
+  - start_year: 2018
+    train_years: 3
+    test_years: 1
+    step_years: 1
+  - start_year: 2019
+    train_years: 3
+    test_years: 1
+    step_years: 1
+  - start_year: 2020
+    train_years: 3
+    test_years: 1
+    step_years: 1
+  - start_year: 2021
+    train_years: 3
+    test_years: 1
+    step_years: 1
+
+meta_wf_plateau_min_sensitivity: 0.7
+meta_wf_top_k_per_window: 20
+meta_wf_test_min_trades: 10
+meta_wf_test_min_expectancy_r: 0.0
+
+# --- Custom-indicator & economic-calendar atoms (dataExporter.mq5 v1.01) ---
+# Thresholds for the atomic conditions generated from the custom-indicator and calendar
+# columns. Columns absent from the CSV simply produce no atoms (old exports still work).
+#
+# VolRegime_ATR: percentile (0-100), ATR/SMA(ATR) ratio, regime 0=low / 1=mid / 2=high vol.
+volregime_pctl_thresholds: [20, 30, 70, 80]
+volregime_ratio_thresholds: [0.8, 1.0, 1.2]
+volregime_regime_values: [0, 1, 2]
+# PriceStructure: ps_dist_* = (level - price) / ATR (+ = level above price);
+# ps_gap_atr = signed daily gap in ATR; ps_gap_fill_pct = % of the gap filled (0-100).
+ps_dist_thresholds: [-2, -1, -0.5, 0.5, 1, 2]
+ps_gap_thresholds: [-1, -0.5, 0.5, 1]
+ps_gap_fill_thresholds: [25, 50, 75]
+# Economic calendar (only used when run with --calendar-csv). Times are broker server time.
+calendar_minutes_thresholds: [15, 30, 60, 120, 240]   # cal_min_to_next_* / cal_min_since_last_* < N minutes
+calendar_surprise_thresholds: [0.5, 1.0, 2.0]       # cal_last_surprise_absz > N (std units)
+calendar_importance_high: 3          # MT5 importance: 1 low, 2 moderate, 3 high
+calendar_importance_medplus: 2
+calendar_max_minutes: 1440          # cap for the "minutes to / since" columns
+calendar_impact_max_age_min: 240   # cal_last_impact_sym / surprise fall back to 0 after this
+# calendar_currencies: [USD]       # default: derived from the symbol (XAUUSD -> USD, EURUSD -> EUR, USD)
+calendar_exclude_holidays: true
+calendar_surprise_min_history: 4     # prior releases of an event needed before its surprise is scored
