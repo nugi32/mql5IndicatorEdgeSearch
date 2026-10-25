@@ -320,6 +320,13 @@ python scripts/run_walkforward_pipeline.py \
   --config-dir config/WALKFORWARD/XAUUSD/M5 \
   --output-dir output_walkforward
 
+  python scripts/run_walkforward_pipeline.py \
+  data/raw_csv/XAUUSD/XAUUSD_M1.csv \
+  --symbol XAUUSD \
+  --timeframe M1 \
+  --config-dir config/WALKFORWARD/XAUUSD/M1 \
+  --output-dir output_walkforward
+
 python scripts/run_walkforward_pipeline.py \
   data/raw_csv/XAUUSD/XAUUSD_H1.csv \
   --symbol XAUUSD \
