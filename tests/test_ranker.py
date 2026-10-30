@@ -118,3 +118,41 @@ def test_no_results_returns_none(tmp_path):
 def test_config_overrides_from_dict():
     cfg = ranker_config_from_dict({"ranker_min_pf": 1.6, "ranker_top_n_window": 5})
     assert cfg.min_pf == 1.6 and cfg.top_n_window == 5 and cfg.min_windows == 3
+
+
+def test_sort_mode_keeps_everything_and_limits_top_n():
+    rows = [_row("rsi_14 < 30.0", n=5, pf=1.1, passed=False),   # would be rejected in filter mode
+            _row("atr_14 > 5.0", pf=3.0),                       # isolated spike
+            _row("macd > 1.0", pf=1.8), _row("ema_20 > 2.0", pf=1.7),
+            _row("cci_20 > 100.0", pf=1.6)]
+    cfg = RankerConfig(sort_top_n=3)
+    strict = rank_window(pd.DataFrame(rows), cfg)
+    sorted_ = rank_window(pd.DataFrame(rows), cfg, sort_mode=True)
+    assert strict["n_pass"] == 0
+    assert sorted_["n_pass"] == 5 and len(sorted_["top"]) == 3
+    scores = [r["score"] for r in sorted_["top"]]
+    assert scores == sorted(scores, reverse=True)
+    allw = {w for r in rank_window(pd.DataFrame(rows), RankerConfig(sort_top_n=10), True)["top"]
+            for w in r["warnings"]}
+    assert {"low_frequency", "low_pf", "no_plateau", "test_failed"} <= allw
+
+
+def test_run_ranker_modes_write_separate_files(tmp_path):
+    for i in range(3):
+        _write(tmp_path, f"window_{i:04d}", [_row("rsi_14 < 30.0", n=10), _row("atr_14 > 5.0", n=10)])
+    run_ranker(tmp_path, "XAUUSD", "H1", mode="filter")
+    assert (tmp_path / "ranker_result.md").exists()
+    assert not (tmp_path / "ranker_sort_result.md").exists()
+    original = (tmp_path / "ranker_result.md").read_text()
+    run_ranker(tmp_path, "XAUUSD", "H1", RankerConfig(sort_top_n=5), mode="sort")
+    assert (tmp_path / "ranker_result.md").read_text() == original      # old output untouched
+    text = (tmp_path / "ranker_sort_result.md").read_text()
+    assert text.startswith("# Ranker sort result") and "Warnings" in text
+    assert "warnings" in pd.read_csv(tmp_path / "ranker_sort_top.csv").columns
+    run_ranker(tmp_path, "XAUUSD", "H1", mode="both")
+
+
+def test_invalid_mode_raises(tmp_path):
+    import pytest
+    with pytest.raises(ValueError):
+        run_ranker(tmp_path, "X", "H1", mode="nope")

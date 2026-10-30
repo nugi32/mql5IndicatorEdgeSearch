@@ -40,6 +40,8 @@ logger = logging.getLogger(__name__)
 RESULT_FILENAME = "TEST_PERIOD_RESULTS.csv"
 OUTPUT_MD = "ranker_result.md"
 OUTPUT_CSV = "ranker_top.csv"
+SORT_OUTPUT_MD = "ranker_sort_result.md"
+SORT_OUTPUT_CSV = "ranker_sort_top.csv"
 
 PF_CAP = 10.0  # profit factors above this (or inf) are clipped before scoring
 
@@ -65,6 +67,8 @@ class RankerConfig:
     top_n_timeframe: int = 20
     top_n_window: int = 10
     require_test_passed: bool = True   # window-level: only rows that passed the pipeline's test gate
+    sort_top_n: int = 10               # sort mode: list length per timeframe and per window
+    sort_dedupe: bool = True           # sort mode: collapse near-duplicate EAs
 
 
 def ranker_config_from_dict(pipeline_config: Optional[Dict[str, Any]]) -> RankerConfig:
@@ -278,25 +282,31 @@ def _dedupe(rows_sorted: List[Dict[str, Any]], cfg: RankerConfig) -> List[Dict[s
 # Window and timeframe ranking
 # --------------------------------------------------------------------------
 
-def rank_window(df: pd.DataFrame, cfg: RankerConfig) -> Dict[str, Any]:
+def rank_window(df: pd.DataFrame, cfg: RankerConfig, sort_mode: bool = False) -> Dict[str, Any]:
     rows = _normalise(df)
     _plateau(rows, cfg)
     ok, rejected = [], {}
     for r in rows:
         r["stability"] = _stability(r["test_exp"], r["train_exp"])
         reasons = _reject_reasons(r, cfg, cfg.min_window_trades)
-        if cfg.require_test_passed and not r["test_passed"]:
+        if not r["test_passed"] and (sort_mode or cfg.require_test_passed):
             reasons.append("test_failed")
-        if reasons:
+        if sort_mode:
+            # Sort mode: nothing is rejected; failed checks become warnings.
+            if r["n_trades"] <= 0:
+                continue
+            r["warnings"] = reasons
+        elif reasons:
             for x in reasons:
                 rejected[x] = rejected.get(x, 0) + 1
             continue
         r["score"] = _score(r, cfg, cfg.min_window_trades, WEIGHTS_WINDOW)
         ok.append(r)
     ok.sort(key=lambda r: r["score"], reverse=True)
-    top = _dedupe(ok, cfg)
+    top = _dedupe(ok, cfg) if (not sort_mode or cfg.sort_dedupe) else ok
+    limit = cfg.sort_top_n if sort_mode else cfg.top_n_window
     return {"n_total": len(rows), "n_pass": len(ok), "n_unique": len(top),
-            "rejected": rejected, "top": top[: cfg.top_n_window]}
+            "rejected": rejected, "top": top[:limit]}
 
 
 def _weighted(values: pd.Series, weights: pd.Series) -> float:
@@ -358,7 +368,8 @@ def aggregate_timeframe(windows: Dict[str, pd.DataFrame], cfg: RankerConfig) -> 
     return out
 
 
-def rank_timeframe(windows: Dict[str, pd.DataFrame], cfg: RankerConfig) -> Dict[str, Any]:
+def rank_timeframe(windows: Dict[str, pd.DataFrame], cfg: RankerConfig,
+                   sort_mode: bool = False) -> Dict[str, Any]:
     rows = aggregate_timeframe(windows, cfg)
     _plateau(rows, cfg)
     min_windows = min(cfg.min_windows, len(windows))
@@ -370,16 +381,21 @@ def rank_timeframe(windows: Dict[str, pd.DataFrame], cfg: RankerConfig) -> Dict[
             reasons.append("few_windows")
         if r["test_exp"] <= 0 and "low_pf" not in reasons:
             reasons.append("non_positive_expectancy")
-        if reasons:
+        if sort_mode:
+            if r["n_trades"] <= 0:
+                continue
+            r["warnings"] = reasons
+        elif reasons:
             for x in reasons:
                 rejected[x] = rejected.get(x, 0) + 1
             continue
         r["score"] = _score(r, cfg, cfg.min_total_trades, WEIGHTS_TIMEFRAME)
         ok.append(r)
     ok.sort(key=lambda r: r["score"], reverse=True)
-    top = _dedupe(ok, cfg)
+    top = _dedupe(ok, cfg) if (not sort_mode or cfg.sort_dedupe) else ok
+    limit = cfg.sort_top_n if sort_mode else cfg.top_n_timeframe
     return {"n_total": len(rows), "n_pass": len(ok), "n_unique": len(top),
-            "rejected": rejected, "top": top[: cfg.top_n_timeframe],
+            "rejected": rejected, "top": top[:limit],
             "min_windows": min_windows, "n_windows": len(windows)}
 
 
@@ -393,11 +409,13 @@ def _fmt_rejected(rej: Dict[str, int]) -> str:
     return ", ".join(f"{k}={v}" for k, v in sorted(rej.items(), key=lambda kv: -kv[1]))
 
 
-def _table(top: List[Dict[str, Any]], timeframe_level: bool) -> List[str]:
+def _table(top: List[Dict[str, Any]], timeframe_level: bool, sort_mode: bool = False) -> List[str]:
     head = ["#", "Condition", "Dir", "Hold", "Trades", "PF", "Exp R", "Train Exp R", "Stab", "Plateau", "Nbrs"]
     if timeframe_level:
         head += ["Windows ok"]
     head += ["Score", "Flags"]
+    if sort_mode:
+        head += ["Warnings"]
     lines = ["| " + " | ".join(head) + " |", "|" + "|".join("---" for _ in head) + "|"]
     for i, r in enumerate(top, 1):
         cells = [str(i), f"`{r['condition']}`", r["direction"], str(r["holding_bars"]),
@@ -407,6 +425,8 @@ def _table(top: List[Dict[str, Any]], timeframe_level: bool) -> List[str]:
         if timeframe_level:
             cells.append(f"{r['n_windows_passed']}/{r['n_windows']}")
         cells += [f"{r['score']:.1f}", _flags(r)]
+        if sort_mode:
+            cells.append(", ".join(r.get("warnings", [])) or "-")
         lines.append("| " + " | ".join(cells) + " |")
     return lines
 
@@ -423,68 +443,112 @@ def _similar_notes(top: List[Dict[str, Any]]) -> List[str]:
 
 
 def build_markdown(symbol: str, timeframe: str, tf_result: Dict[str, Any],
-                   win_results: Dict[str, Dict[str, Any]], cfg: RankerConfig) -> str:
-    L: List[str] = [f"# Ranker result — {symbol} {timeframe}", ""]
+                   win_results: Dict[str, Dict[str, Any]], cfg: RankerConfig,
+                   sort_mode: bool = False) -> str:
+    title = "Ranker sort result" if sort_mode else "Ranker result"
+    L: List[str] = [f"# {title} — {symbol} {timeframe}", ""]
     L += [
         "Scores combine profit factor, expectancy, trade count, EA-level plateau, "
         "out-of-sample stability (test close to train) and, for the timeframe list, "
         "how many windows the combination passed in. Near-duplicate EAs are collapsed.",
         "",
-        f"Thresholds: PF >= {cfg.min_pf}, sensitivity >= {cfg.min_sensitivity}, "
-        f"plateau >= {cfg.min_plateau_score}, window trades >= {cfg.min_window_trades}, "
-        f"total trades >= {cfg.min_total_trades}, windows >= {tf_result['min_windows']} "
-        f"(of {tf_result['n_windows']}). PF/expectancy at timeframe level are trade-weighted "
-        "means over windows (approximation). Flags: CAL = uses calendar/news columns "
-        "(calendar API does not work in the Strategy Tester), CUSTOM = uses custom indicators.",
+    ]
+    if sort_mode:
+        L += [
+            f"**Sort mode:** nothing is rejected. All combinations are sorted by score and the "
+            f"top {cfg.sort_top_n} are listed. The Warnings column shows which of the strict "
+            f"filters (filter mode) a combination would fail: low_frequency, low_pf, "
+            f"low_sensitivity, no_plateau, test_failed, few_windows, non_positive_expectancy.",
+            "",
+        ]
+    else:
+        L += [
+            f"Thresholds: PF >= {cfg.min_pf}, sensitivity >= {cfg.min_sensitivity}, "
+            f"plateau >= {cfg.min_plateau_score}, window trades >= {cfg.min_window_trades}, "
+            f"total trades >= {cfg.min_total_trades}, windows >= {tf_result['min_windows']} "
+            f"(of {tf_result['n_windows']}).",
+            "",
+        ]
+    L += [
+        "PF/expectancy at timeframe level are trade-weighted means over windows "
+        "(approximation). Flags: CAL = uses calendar/news columns (calendar API does not "
+        "work in the Strategy Tester), CUSTOM = uses custom indicators.",
         "",
         "## Result top per timeframe", "",
-        f"{tf_result['n_total']} distinct combinations, {tf_result['n_pass']} passed all filters, "
-        f"{tf_result['n_unique']} after removing near-duplicates. "
-        f"Rejected by: {_fmt_rejected(tf_result['rejected'])}.", "",
+        f"{tf_result['n_total']} distinct combinations, {tf_result['n_pass']} "
+        f"{'ranked' if sort_mode else 'passed all filters'}, "
+        f"{tf_result['n_unique']} after removing near-duplicates."
+        + ("" if sort_mode else f" Rejected by: {_fmt_rejected(tf_result['rejected'])}."), "",
     ]
+    empty = "_No combinations._" if sort_mode else "_No combination passed all filters._"
     if tf_result["top"]:
-        L += _table(tf_result["top"], True) + [""] + _similar_notes(tf_result["top"]) + [""]
+        L += _table(tf_result["top"], True, sort_mode) + [""] + _similar_notes(tf_result["top"]) + [""]
     else:
-        L += ["_No combination passed all filters._", ""]
+        L += [empty, ""]
     for label, res in win_results.items():
         L += [f"## Result window {label}", "",
-              f"{res['n_total']} candidates, {res['n_pass']} passed, "
-              f"{res['n_unique']} after removing near-duplicates. "
-              f"Rejected by: {_fmt_rejected(res['rejected'])}.", ""]
+              f"{res['n_total']} candidates, {res['n_pass']} "
+              f"{'ranked' if sort_mode else 'passed'}, "
+              f"{res['n_unique']} after removing near-duplicates."
+              + ("" if sort_mode else f" Rejected by: {_fmt_rejected(res['rejected'])}."), ""]
         if res["top"]:
-            L += _table(res["top"], False) + [""] + _similar_notes(res["top"]) + [""]
+            L += _table(res["top"], False, sort_mode) + [""] + _similar_notes(res["top"]) + [""]
         else:
-            L += ["_No combination passed all filters._", ""]
+            L += [empty, ""]
     return "\n".join(L)
 
 
+def _write_csv(path: Path, top: List[Dict[str, Any]], sort_mode: bool) -> None:
+    rows = []
+    for i, r in enumerate(top, 1):
+        row = {
+            "rank": i, "condition": r["condition"], "direction": r["direction"],
+            "holding_bars": r["holding_bars"], "total_trades": r["n_trades"],
+            "profit_factor": round(r["pf"], 4), "test_expectancy_r": round(r["test_exp"], 4),
+            "train_expectancy_r": round(r["train_exp"], 4), "stability": round(r["stability"], 4),
+            "plateau_score": round(r["plateau_score"], 4), "n_neighbors": r["n_neighbors"],
+            "windows_passed": r["n_windows_passed"], "windows_seen": r["n_windows"],
+            "score": round(r["score"], 2), "flags": _flags(r),
+            "n_similar_removed": len(r.get("similar", [])),
+        }
+        if sort_mode:
+            row["warnings"] = ";".join(r.get("warnings", []))
+        rows.append(row)
+    pd.DataFrame(rows).to_csv(path, index=False)
+
+
+MODES = ("filter", "sort", "both")
+
+
 def run_ranker(run_dir: str | Path, symbol: str, timeframe: str,
-               cfg: Optional[RankerConfig] = None) -> Optional[Path]:
+               cfg: Optional[RankerConfig] = None, mode: str = "filter") -> Optional[Path]:
     """
-    Read results under ``run_dir`` and write ranker_result.md / ranker_top.csv
-    there. Returns the markdown path, or None when no window results exist.
+    Read results under ``run_dir`` and write the ranker output there.
+
+    mode="filter": strict filters -> ranker_result.md / ranker_top.csv (original ranker)
+    mode="sort":   no rejection, sort by score, top N -> ranker_sort_result.md / ranker_sort_top.csv
+    mode="both":   both of the above
+
+    Returns the first markdown path written, or None when no window results exist.
     """
+    if mode not in MODES:
+        raise ValueError(f"mode must be one of {MODES}, got {mode!r}")
     run_dir = Path(run_dir)
     cfg = cfg or RankerConfig()
     windows = load_window_results(run_dir)
     if not windows:
         logger.warning(f"Ranker: no {RESULT_FILENAME} found under {run_dir}; nothing to rank")
         return None
-    tf_result = rank_timeframe(windows, cfg)
-    win_results = {label: rank_window(df, cfg) for label, df in windows.items()}
-    md_path = run_dir / OUTPUT_MD
-    md_path.write_text(build_markdown(symbol, timeframe, tf_result, win_results, cfg), encoding="utf-8")
 
-    csv_rows = [{
-        "rank": i, "condition": r["condition"], "direction": r["direction"],
-        "holding_bars": r["holding_bars"], "total_trades": r["n_trades"],
-        "profit_factor": round(r["pf"], 4), "test_expectancy_r": round(r["test_exp"], 4),
-        "train_expectancy_r": round(r["train_exp"], 4), "stability": round(r["stability"], 4),
-        "plateau_score": round(r["plateau_score"], 4), "n_neighbors": r["n_neighbors"],
-        "windows_passed": r["n_windows_passed"], "windows_seen": r["n_windows"],
-        "score": round(r["score"], 2), "flags": _flags(r),
-        "n_similar_removed": len(r.get("similar", [])),
-    } for i, r in enumerate(tf_result["top"], 1)]
-    pd.DataFrame(csv_rows).to_csv(run_dir / OUTPUT_CSV, index=False)
-    logger.info(f"Ranker result written to {md_path}")
-    return md_path
+    first: Optional[Path] = None
+    for sort_mode in ([False, True] if mode == "both" else [mode == "sort"]):
+        tf_result = rank_timeframe(windows, cfg, sort_mode)
+        win_results = {label: rank_window(df, cfg, sort_mode) for label, df in windows.items()}
+        md_name, csv_name = (SORT_OUTPUT_MD, SORT_OUTPUT_CSV) if sort_mode else (OUTPUT_MD, OUTPUT_CSV)
+        md_path = run_dir / md_name
+        md_path.write_text(
+            build_markdown(symbol, timeframe, tf_result, win_results, cfg, sort_mode), encoding="utf-8")
+        _write_csv(run_dir / csv_name, tf_result["top"], sort_mode)
+        logger.info(f"Ranker ({'sort' if sort_mode else 'filter'}) result written to {md_path}")
+        first = first or md_path
+    return first

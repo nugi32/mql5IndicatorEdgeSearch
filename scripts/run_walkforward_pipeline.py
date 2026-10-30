@@ -68,7 +68,7 @@ from edge_research.conditions.condition_library import (
 )
 from edge_research.ingestion.economic_calendar import calendar_options_from_config
 from edge_research.ingestion.loader import ingest_pipeline
-from edge_research.ranking.ranker import ranker_config_from_dict, run_ranker
+from edge_research.ranking.ranker import MODES, ranker_config_from_dict, run_ranker
 from edge_research.utils.run_dir import (
     attach_run_log,
     detach_run_log,
@@ -530,6 +530,18 @@ def main():
     )
     parser.add_argument("--max-conditions", type=int, default=None)
     parser.add_argument(
+        "--mode", choices=MODES, default="filter",
+        help="Post-run ranker mode. filter = strict filters (ranker_result.md, default); "
+             "sort = no rejection, sort by score, top N per timeframe/window "
+             "(ranker_sort_result.md; N = ranker_sort_top_n in config, default 10); "
+             "both = write both files.",
+    )
+    parser.add_argument(
+        "--sort-top-n", type=int, default=None,
+        help="Sort mode: how many combinations to list per timeframe and per window "
+             "(e.g. 5 or 10). Default: ranker_sort_top_n from config, else 10.",
+    )
+    parser.add_argument(
         "--no-ranker", action="store_true",
         help="Skip the post-run ranker (ranker_result.md). It can be run later with "
              "scripts/run_ranker.py.",
@@ -582,10 +594,11 @@ def main():
         if not args.no_ranker:
             # A ranker problem must never turn a finished run into a failed one.
             try:
-                run_ranker(
-                    run_dir, args.symbol, args.timeframe,
-                    ranker_config_from_dict(load_config(Path(args.config_dir) / "pipeline_config.yaml")),
-                )
+                ranker_cfg = ranker_config_from_dict(
+                    load_config(Path(args.config_dir) / "pipeline_config.yaml"))
+                if args.sort_top_n:
+                    ranker_cfg.sort_top_n = args.sort_top_n
+                run_ranker(run_dir, args.symbol, args.timeframe, ranker_cfg, mode=args.mode)
             except Exception:
                 logger.exception("Ranker failed (run results are unaffected); "
                                  "re-run with scripts/run_ranker.py")

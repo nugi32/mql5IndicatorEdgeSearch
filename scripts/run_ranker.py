@@ -5,6 +5,7 @@ or with different thresholds).
 
 Usage:
     python scripts/run_ranker.py output_walkforward/<run folder> --symbol XAUUSD --timeframe H1 --min-pf 1.5
+    python scripts/run_ranker.py <run folder> --mode sort --sort-top-n 5
 """
 
 import argparse
@@ -15,7 +16,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from edge_research.ranking.ranker import RankerConfig, run_ranker  # noqa: E402
+from edge_research.ranking.ranker import MODES, RankerConfig, run_ranker  # noqa: E402
 
 
 def main(argv=None) -> int:
@@ -23,6 +24,13 @@ def main(argv=None) -> int:
     parser.add_argument("run_dir")
     parser.add_argument("--symbol", default="?")
     parser.add_argument("--timeframe", default="?")
+    parser.add_argument(
+        "--mode", choices=MODES, default="filter",
+        help="filter = strict filters (ranker_result.md); sort = no rejection, sort by score and "
+             "list the top --sort-top-n (ranker_sort_result.md); both = write both files",
+    )
+    parser.add_argument("--no-dedupe", action="store_true",
+                        help="Sort mode: keep near-duplicate EAs in the list")
     defaults = RankerConfig()
     for f in fields(RankerConfig):
         flag = "--" + f.name.replace("_", "-")
@@ -35,7 +43,9 @@ def main(argv=None) -> int:
 
     cfg = RankerConfig(**{f.name: getattr(args, f.name) for f in fields(RankerConfig)
                           if not isinstance(getattr(defaults, f.name), bool)})
-    path = run_ranker(args.run_dir, args.symbol, args.timeframe, cfg)
+    if args.no_dedupe:
+        cfg.sort_dedupe = False
+    path = run_ranker(args.run_dir, args.symbol, args.timeframe, cfg, mode=args.mode)
     if path is None:
         return 1
     print(path)
