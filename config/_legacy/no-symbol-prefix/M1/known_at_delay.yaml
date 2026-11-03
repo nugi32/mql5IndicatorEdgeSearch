@@ -1,0 +1,56 @@
+# Mapping of indicator columns to their availability delay (in bars)
+# Default is 0 (available at close of current bar)
+# Future: Ichimoku, Fractals, etc. will have nonzero delays
+
+# Moving averages — available at bar close
+ma_.*: 0
+
+# Adaptive MAs
+dema_.*: 0
+tema_.*: 0
+frama_.*: 0
+ama_.*: 0
+vidya_.*: 0
+
+# Trend/Directional
+sar_.*: 0
+adx_.*: 0
+adxwilder_.*: 0
+
+# Oscillators
+rsi_.*: 0
+stoch_.*: 0
+cci_.*: 0
+wpr_.*: 0
+mom_.*: 0
+macd_.*: 0
+osma_.*: 0
+demarker_.*: 0
+rvi_.*: 0
+trix_.*: 0
+ac: 0
+ao: 0
+bears_.*: 0
+bulls_.*: 0
+
+# Volatility
+atr_.*: 0
+bb_.*: 0
+stddev_.*: 0
+envelope_.*: 0
+
+# Volume-based
+obv: 0
+ad: 0
+mfi_.*: 0
+force_.*: 0
+chaikin_.*: 0
+volumes: 0
+
+# OHLCV
+open: 0
+high: 0
+low: 0
+close: 0
+tick_volume: 0
+real_volume: 0

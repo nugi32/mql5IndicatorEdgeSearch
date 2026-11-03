@@ -1,0 +1,35 @@
+# MT5 Strategy Tester emulation -- EURUSD H4
+# One file per timeframe because the spread (and so the cost of a trade) differs
+# between timeframes. Used by scripts/run_mt5_backtest.py.
+#
+# spread_points below is a fixed value you set. To use the real broker spread
+# instead, run mql5/spreadExporter.mq5 on a EURUSD H4 chart and either:
+#   - pass the file with --spread-csv (real spread of every bar), or
+#   - python scripts/calibrate_mt5_spread.py <that file> --update-config config/MT5_TESTER/EURUSD/H4.yaml
+
+# --- Tester window settings -------------------------------------------------
+modelling: open_prices_only
+execution_delay: random        # as set in the tester window; has NO effect: MT5 does not allow Random Delay with Open prices only
+forward: none                  # Forward = No
+
+# --- Instrument (EURUSD) ---
+point: 0.00001
+digits: 5
+contract_size: 100000      # units per 1.0 lot
+lots: 0.1
+initial_deposit: 10000
+
+# --- Costs ---
+spread_points: 8        # 1 pip = 10 points on a 5-digit quote (0.00010 price units)
+slippage_points: 0             # tester triggers without sliding in Open prices only
+commission_per_lot_per_side: 0 # deposit currency; copy from your broker's symbol specification
+swap_long_per_lot: 0           # deposit currency per lot per night (negative = cost)
+swap_short_per_lot: 0
+swap_rollover_hour: 0
+swap_triple_weekday: 2         # 0=Mon .. 4=Fri; 2 = Wednesday
+
+# --- EA behaviour being emulated ---
+max_open_positions: 1          # EA ignores signals while a position is open
+exit_bar_offset: 0             # exit bar = entry bar + holding_bars + this; filled at that bar's OPEN
+reenter_on_exit_bar: false     # false: no new entry on the tick that closes a trade
+close_open_at_end: false       # false: trades still open at the end of the test are not counted
