@@ -149,7 +149,7 @@ stoch_thresholds: [20, 30, 70, 80]
 output_dir: "./output"
 parquet_compression: "zstd"        # zstd or snappy
 
-top_n_atomic_for_combine: 15
+top_n_atomic_for_combine: 35
 max_corr_combine: 0.85
 max_atoms_per_combo: 5
 include_ma_conditions: true        # enables the 5th family (MA) so 5-way combos are possible
