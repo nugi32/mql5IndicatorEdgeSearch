@@ -1,0 +1,9 @@
+# Run all tests
+pytest tests/
+
+# Run specific test module
+pytest tests/test_conditions.py -v
+
+# With coverage
+pytest tests/ --cov=edge_research --cov-report=html
+Test fixtures use synthetic data (random-walk prices + indicator columns). No external data dependencies.
